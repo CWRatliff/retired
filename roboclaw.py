@@ -3,6 +3,7 @@ import serial
 import struct
 import time
 
+# lines with #cwr are modifications to allow python3 usage. All applicable functions EXCEPT SendRandomData are tested
 class Roboclaw:
 	'Roboclaw Interface Class'
 	
@@ -123,15 +124,19 @@ class Roboclaw:
 	def _sendcommand(self,address,command):
 		self._crc_clear()
 		self._crc_update(address)
-		self._port.write(chr(address))
+#cwr		self._port.write(chr(address))
 		self._crc_update(command)
-		self._port.write(chr(command))
+#cwr		self._port.write(chr(command))
+		cmd_bytes = struct.pack('>BB', address, command)        #cwr
+		self._port.write(cmd_bytes)                             #cwr
 		return
 
 	def _readchecksumword(self):
 		data = self._port.read(2)
 		if len(data)==2:
-			crc = (ord(data[0])<<8) | ord(data[1])
+			crcbytes = struct.unpack('>BB', data)
+#cwr			crc = (ord(crcbytes[0])<<8) | ord(crcbytes[1])
+			crc = (crcbytes[0])<<8 | crcbytes[1]            #cwr
 			return (1,crc)	
 		return (0,0)
 		
@@ -140,7 +145,9 @@ class Roboclaw:
 		if len(data):
 			val = ord(data)
 			self._crc_update(val)
-			return (1,val)	
+			databyte = struct.unpack(">B", data)            #cwr
+#cwr			return (1,val)	
+			return (1,databyte[0])	                        #cwr
 		return (0,0)
 		
 	def _readword(self):
@@ -173,7 +180,9 @@ class Roboclaw:
 
 	def _writebyte(self,val):
 		self._crc_update(val & 0xFF)
-		self._port.write(chr(val&0xFF))
+#cwr		self._port.write(chr(val&0xFF))
+		cmd_bytes = struct.pack('>B', val&0xFF)         #cwr
+		self._port.write(cmd_bytes)                     #cwr
 
 	def _writesbyte(self,val):
 		self._writebyte(val)
@@ -714,7 +723,9 @@ class Roboclaw:
 					self._crc_update(val)
 					if(val==0):
 						break
-					str+=data[0]
+					databyte = struct.unpack('>B', data)            #cwr
+#					str+=data[0]
+					str+= chr(databyte[0])                          #cwr
 				else:
 					passed = False
 					break
