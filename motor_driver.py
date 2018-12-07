@@ -22,7 +22,7 @@ class motor_driver:
 
 	def __init__(self):
 		self.i2c = busio.I2C(SCL, SDA)
-		self.pca = PCA9685(i2c)
+		self.pca = PCA9685(self.i2c)
 		self.pca.frequency = 50
 		self.br_motor = servo.Servo(pca.channels[0], actuation_range=119, min_pulse=700, max_pulse=2300)
 		self.fr_motor = servo.Servo(pca.channels[1])

@@ -26,7 +26,7 @@ if i != 1:
 	print("open status = ["+str(i)+"]")
 '''
 
-robot = motor_driver()
+robot = motor_driver.motor_driver()
 
 steer = 0			# degrees clockwise
 speed = 0			# percentage
@@ -36,7 +36,7 @@ right_limit = 35
 #d2 = 10.5
 #d3 = 10.5
 #d4 = 10.073
-''''
+'''
 def turn_motor(address, v, av1, av2):
 	if v >= 0:
 		rc.ForwardM1(address, int(v * av1))
@@ -99,7 +99,7 @@ def motor():
 		turn_motor(0x80, vel, 1, 1)
 		turn_motor(0x81, vel, 1, 1)
 		turn_motor(0x82, vel, 1, 1)
-		''''
+		'''
 #main loop
 while True:
     key = input("...")
@@ -112,13 +112,13 @@ while True:
         if steer > left_limit:
             steer -= 1
             robot.motor(speed, steer)
- ''''
+
     elif cmd == 'J':
         print('LEFT')
         if steer > left_limit - 3:
             steer -= 3
             motor()
-
+'''
     elif cmd == 'k':
         print('right')
         if steer < right_limit:
@@ -153,6 +153,6 @@ while True:
 
     elif cmd == 'q' or cmd == 'Q':
         break
-''''
+'''
 stop_all()   
 pca.deinit()
