@@ -1,5 +1,5 @@
-#robot driver using pygame keystrokes 181204
-#import time
+#rover motor driver class - 4 servo motors for steering, 6 DC motors for locomotion
+
 from board import SCL, SDA
 import busio
 
@@ -11,14 +11,6 @@ import math
 from roboclaw import Roboclaw
 
 class motor_driver:
-#	steer = 0			# degrees clockwise
-#	speed = 0			# percentage
-#	left_limit = -35
-#	right_limit = 35
-#	d1 = 7.254
-#	d2 = 10.5
-#	d3 = 10.5
-#	d4 = 10.073
 
 	def __init__(self):
 		self.i2c = busio.I2C(SCL, SDA)
@@ -31,8 +23,7 @@ class motor_driver:
 
 		self.rc = Roboclaw("/dev/ttyS0",115200)
 		i = self.rc.Open()
-#		if i != 1:
-#			print("open status = ["+str(i)+"]")
+
 		self.d1 = 7.254
 		self.d2 = 10.5
 		self.d3 = 10.5
@@ -54,21 +45,18 @@ class motor_driver:
 
 # based on speed & steer, command all motors
 	def motor(self, speed, steer):
-		vel = speed * 1.27						#roboclaw speed limit -127 to 127
-		if steer != 0:							#if steering angle not zero, compute angles, wheel speed
+		vel = speed * 1.27								#roboclaw speed limit -127 to 127
+		if steer != 0:									#if steering angle not zero, compute angles, wheel speed
 			angle = math.radians(abs(steer))
-			ric = self.d3 / math.sin(angle)			#turn radius - inner corner
+			ric = self.d3 / math.sin(angle)				#turn radius - inner corner
 			rm = ric * math.cos(angle) + self.d1		#body central radius
 			roc = math.sqrt((rm+self.d1)**2 + self.d3**2) #outer corner
-			rmo = rm + self.d4						#middle outer
-			rmi = rm - self.d4						#middle inner
+			rmo = rm + self.d4							#middle outer
+			rmi = rm - self.d4							#middle inner
 			phi = math.degrees(math.asin(self.d3 / roc))
-			voc = roc / rmo						#velocity corners & middle inner
+			voc = roc / rmo								#velocity corners & middle inner
 			vic = ric / rmo
 			vim = rmi / rmo
-#			print("speed, steer:" + str(speed) + " " + str(steer))
-#			print("ric:"+str(ric)+" rm "+ str(rm)+" roc "+str(roc) + " rmo " + str(rmo) + " rmi " + str(rmi))
-#			print("phi "+str(phi))
 
 # left turn
 		if steer < 0:
@@ -99,7 +87,3 @@ class motor_driver:
 			self.turn_motor(0x80, vel, 1, 1)
 			self.turn_motor(0x81, vel, 1, 1)
 			self.turn_motor(0x82, vel, 1, 1)
-		
-
-#stop_all()   
-#pca.deinit()

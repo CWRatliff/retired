@@ -64,4 +64,3 @@ while True:
         break
 
 robot.stop_all()   
-pca.deinit()
