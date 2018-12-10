@@ -28,15 +28,21 @@ class motor_driver:
 		self.d2 = 10.5
 		self.d3 = 10.5
 		self.d4 = 10.073
-	
+
+	def diag(self):
+                print("servo br ="+str(self.br_motor.angle))
+                print("servo fr ="+str(self.fr_motor.angle))
+                print("servo fl ="+str(self.fl_motor.angle))
+                print("servo bl ="+str(self.bl_motor.angle))
+#		self.turn_motor(0x80, vel, voc, 1)
 
 	def turn_motor(self, address, v, av1, av2):
 		if v >= 0:
 			self.rc.ForwardM1(address, int(v * av1))
 			self.rc.ForwardM2(address, int(v * av2))
 		else:
-			self.rc.BackwardM1(address, int(v * av1))
-			self.rc.BackwardM2(address, int(v * av2))
+			self.rc.BackwardM1(address, int(abs(v * av1)))
+			self.rc.BackwardM2(address, int(abs(v * av2)))
 
 	def stop_all(self):
 		self.turn_motor(0X80, 0, 0, 0)
@@ -45,6 +51,7 @@ class motor_driver:
 
 # based on speed & steer, command all motors
 	def motor(self, speed, steer):
+		print("Motor speed, steer "+str(speed)+", "+str(steer))
 		vel = speed * 1.27								#roboclaw speed limit -127 to 127
 		if steer != 0:									#if steering angle not zero, compute angles, wheel speed
 			angle = math.radians(abs(steer))
@@ -54,6 +61,8 @@ class motor_driver:
 			rmo = rm + self.d4							#middle outer
 			rmi = rm - self.d4							#middle inner
 			phi = math.degrees(math.asin(self.d3 / roc))
+			if steer < 0:
+                                phi = -phi
 			voc = roc / rmo								#velocity corners & middle inner
 			vic = ric / rmo
 			vim = rmi / rmo
@@ -87,3 +96,4 @@ class motor_driver:
 			self.turn_motor(0x80, vel, 1, 1)
 			self.turn_motor(0x81, vel, 1, 1)
 			self.turn_motor(0x82, vel, 1, 1)
+		self.diag()

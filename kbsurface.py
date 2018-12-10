@@ -15,12 +15,14 @@ while True:
     if key != "":							#repeat?
         cmd = key
     print("cmd="+cmd)
+    print("speed = "+str(speed)+" steer = "+str(steer))
     
     if cmd == 'j':
         print('left')
         if steer > left_limit:
             steer -= 1
             robot.motor(speed, steer)
+            print("hey")
 
     elif cmd == 'J':
         print('LEFT')
