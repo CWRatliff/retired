@@ -44,15 +44,15 @@ while True:
                     steer += 2
                     robot.motor(speed, steer)
 
-            elif event.key == (K_RIGHT and KMOD_CTRL) or event.key == (K_RIGHT and KMOD_SHIFT):
-                if steer > left_limit + 3:
-                    steer -= 3
-                    robot.motor(speed, steer)
+#            elif event.key == (K_RIGHT and KMOD_CTRL) or event.key == (K_RIGHT and KMOD_SHIFT):
+#               if steer > left_limit + 3:
+#                    steer -= 3
+#                    robot.motor(speed, steer)
 
-            elif event.key == (K_LEFT and KMOD_CTRL) or event.key == (K_LEFT and KMOD_SHIFT):
-                if steer < right_limit - 3:
-                    steer -= 3
-                    robot.motor(speed, steer)
+#            elif event.key == (K_LEFT and KMOD_CTRL) or event.key == (K_LEFT and KMOD_SHIFT):
+#                if steer < right_limit - 3:
+#                   steer -= 3
+#                   robot.motor(speed, steer)
 
             elif event.key == K_SPACE:
                 speed = 0

@@ -17,9 +17,9 @@ class motor_driver:
 		self.pca = PCA9685(self.i2c)
 		self.pca.frequency = 50
 		self.br_motor = servo.Servo(self.pca.channels[0], actuation_range=119, min_pulse=700, max_pulse=2300)
-		self.fr_motor = servo.Servo(self.pca.channels[1])
-		self.fl_motor = servo.Servo(self.pca.channels[2])
-		self.bl_motor = servo.Servo(self.pca.channels[3])
+		self.fr_motor = servo.Servo(self.pca.channels[1], actuation_range=119, min_pulse=700, max_pulse=2300)
+		self.fl_motor = servo.Servo(self.pca.channels[2], actuation_range=119, min_pulse=700, max_pulse=2300)
+		self.bl_motor = servo.Servo(self.pca.channels[3], actuation_range=119, min_pulse=700, max_pulse=2300)
 
 		self.rc = Roboclaw("/dev/ttyS0",115200)
 		i = self.rc.Open()
@@ -96,4 +96,4 @@ class motor_driver:
 			self.turn_motor(0x80, vel, 1, 1)
 			self.turn_motor(0x81, vel, 1, 1)
 			self.turn_motor(0x82, vel, 1, 1)
-		self.diag()
+#		self.diag()
