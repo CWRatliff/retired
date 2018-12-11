@@ -35,13 +35,13 @@ while True:
 
             elif event.key == K_RIGHT:
                 if steer > left_limit:
-                    steer -= 1
-                    print("steer = "+str(steer))
+                    steer -= 2
+#                    print("steer = "+str(steer))
                     robot.motor(speed, steer)
 
             elif event.key == K_LEFT:
                 if steer < right_limit:
-                    steer += 1
+                    steer += 2
                     robot.motor(speed, steer)
 
             elif event.key == (K_RIGHT and KMOD_CTRL) or event.key == (K_RIGHT and KMOD_SHIFT):
@@ -59,6 +59,13 @@ while True:
                 robot.motor(speed, steer)
 
             elif event.key == K_RETURN:
+                dt = 2
+                if steer > 0:
+                    dt = -2
+                while abs(steer) > 2:
+                    steer += dt
+                    robot.motor(speed, steer)
+                    time.sleep(0.1)
                 steer = 0
                 robot.motor(speed, steer)
 
