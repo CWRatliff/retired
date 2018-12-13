@@ -12,6 +12,7 @@ pygame.display.set_caption('Rover')
 
 steer = 0
 speed = 0
+accel = 1
 left_limit = -35
 right_limit = 35
 
@@ -22,37 +23,33 @@ while True:
         if event.type == QUIT:			#X clicked in right corner
             sys.exit()
         if event.type == KEYDOWN:
-            if event.key == K_UP:
-                print('up')
+#            print('key = '+str(event.key))
+            if (event.key == K_RCTRL) or (event.key == K_RSHIFT):
+                accel = 2
+            elif event.key == K_UP:
                 if speed <= 90:
-                    speed += 10
+                    speed += (10 * accel)
+                    accel = 1
                     robot.motor(speed, steer)
 
             elif event.key == K_DOWN:
                 if speed >= -90:
-                    speed -= 10
+                    speed -= (10 * accel)
+                    accel = 1
                     robot.motor(speed, steer)
 
             elif event.key == K_RIGHT:
                 if steer > left_limit:
-                    steer -= 2
+                    steer -= (2 * accel)
+                    accel = 1
 #                    print("steer = "+str(steer))
                     robot.motor(speed, steer)
 
             elif event.key == K_LEFT:
                 if steer < right_limit:
-                    steer += 2
+                    steer += (2 * accel)
+                    accel = 1
                     robot.motor(speed, steer)
-
-#            elif event.key == (K_RIGHT and KMOD_CTRL) or event.key == (K_RIGHT and KMOD_SHIFT):
-#               if steer > left_limit + 3:
-#                    steer -= 3
-#                    robot.motor(speed, steer)
-
-#            elif event.key == (K_LEFT and KMOD_CTRL) or event.key == (K_LEFT and KMOD_SHIFT):
-#                if steer < right_limit - 3:
-#                   steer -= 3
-#                   robot.motor(speed, steer)
 
             elif event.key == K_SPACE:
                 speed = 0
