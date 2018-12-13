@@ -29,6 +29,11 @@ class motor_driver:
 		self.d3 = 10.5
 		self.d4 = 10.073
 
+		self.fl_motor.angle = 90
+		self.fr_motor.angle = 90
+		self.bl_motor.angle = 90
+		self.br_motor.angle = 90
+
 	def diag(self):
                 print("servo br ="+str(self.br_motor.angle))
                 print("servo fr ="+str(self.fr_motor.angle))
