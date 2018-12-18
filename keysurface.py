@@ -40,14 +40,14 @@ while True:
 
             elif event.key == K_RIGHT:
                 if steer > left_limit:
-                    steer -= (2 * accel)
+                    steer += (2 * accel)
                     accel = 1
 #                    print("steer = "+str(steer))
                     robot.motor(speed, steer)
 
             elif event.key == K_LEFT:
                 if steer < right_limit:
-                    steer += (2 * accel)
+                    steer -= (2 * accel)
                     accel = 1
                     robot.motor(speed, steer)
 

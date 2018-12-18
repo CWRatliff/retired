@@ -10,6 +10,8 @@ import serial
 import math
 from roboclaw import Roboclaw
 
+bias = 60
+
 class motor_driver:
 
 	def __init__(self):
@@ -29,10 +31,10 @@ class motor_driver:
 		self.d3 = 10.5
 		self.d4 = 10.073
 
-		self.fl_motor.angle = 90
-		self.fr_motor.angle = 90
-		self.bl_motor.angle = 90
-		self.br_motor.angle = 90
+		self.fl_motor.angle = bias
+		self.fr_motor.angle = bias
+		self.bl_motor.angle = bias
+		self.br_motor.angle = bias
 
 	def diag(self):
                 print("servo br ="+str(self.br_motor.angle))
@@ -42,12 +44,15 @@ class motor_driver:
 #		self.turn_motor(0x80, vel, voc, 1)
 
 	def turn_motor(self, address, v, av1, av2):
+		v1 = int(v * av1)
+		v2 = int(v * av2)
 		if v >= 0:
-			self.rc.ForwardM1(address, int(v * av1))
-			self.rc.ForwardM2(address, int(v * av2))
+			self.rc.ForwardM1(address, v1)
+			self.rc.ForwardM2(address, v2)
 		else:
-			self.rc.BackwardM1(address, int(abs(v * av1)))
-			self.rc.BackwardM2(address, int(abs(v * av2)))
+			self.rc.BackwardM1(address, abs(v1))
+			self.rc.BackwardM2(address, abs(v2))
+		print("m1, m2 = "+str(v1)+", "+str(v2))
 
 	def stop_all(self):
 		self.turn_motor(0X80, 0, 0, 0)
@@ -57,7 +62,10 @@ class motor_driver:
 # based on speed & steer, command all motors
 	def motor(self, speed, steer):
 		print("Motor speed, steer "+str(speed)+", "+str(steer))
-		vel = speed * 1.27								#roboclaw speed limit -127 to 127
+		vel = speed * 1.27
+		voc = 0
+		vic = 0
+		#roboclaw speed limit -127 to 127
 		if steer != 0:									#if steering angle not zero, compute angles, wheel speed
 			angle = math.radians(abs(steer))
 			ric = self.d3 / math.sin(angle)				#turn radius - inner corner
@@ -72,33 +80,35 @@ class motor_driver:
 			vic = ric / rmo
 			vim = rmi / rmo
 
+# SERVO MOTORS ARE COUNTER CLOCKWISE
 # left turn
 		if steer < 0:
-			self.fl_motor.angle = 90 + steer
-			self.fr_motor.angle = 90 + phi
-			self.bl_motor.angle = 90 - steer
-			self.br_motor.angle = 90 - phi
+			self.fl_motor.angle = bias - steer
+			self.fr_motor.angle = bias - phi
+			self.bl_motor.angle = bias + steer
+			self.br_motor.angle = bias + phi
 			self.turn_motor(0x80, vel, vic, vim)
 			self.turn_motor(0x81, vel, vic, voc)
 			self.turn_motor(0x82, vel, 1, voc)
 
 #right turn
 		elif steer > 0:
-			self.fl_motor.angle = 90 + phi
-			self.fr_motor.angle = 90 + steer
-			self.bl_motor.angle = 90 - phi
-			self.br_motor.angle = 90 - steer
+			self.fl_motor.angle = bias - phi
+			self.fr_motor.angle = bias - steer
+			self.bl_motor.angle = bias + phi
+			self.br_motor.angle = bias + steer
 			self.turn_motor(0x80, vel, voc, 1)
 			self.turn_motor(0x81, vel, voc, vic)
 			self.turn_motor(0x82, vel, vim, vic)
 
 #straight ahead
 		else:
-			self.fl_motor.angle = 90
-			self.fr_motor.angle = 90
-			self.bl_motor.angle = 90
-			self.br_motor.angle = 90
+			self.fl_motor.angle = bias
+			self.fr_motor.angle = bias
+			self.bl_motor.angle = bias
+			self.br_motor.angle = bias
 			self.turn_motor(0x80, vel, 1, 1)
 			self.turn_motor(0x81, vel, 1, 1)
 			self.turn_motor(0x82, vel, 1, 1)
-#		self.diag()
+		print("v, vout, vin "+str(vel)+", "+str(voc)+", "+str(vic))
+		self.diag()
