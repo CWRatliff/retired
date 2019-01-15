@@ -3,7 +3,6 @@ import serial
 import struct
 import time
 
-# lines with #cwr are modifications to allow python3 usage. All applicable functions EXCEPT SendRandomData are tested
 class Roboclaw:
 	'Roboclaw Interface Class'
 	
@@ -124,19 +123,19 @@ class Roboclaw:
 	def _sendcommand(self,address,command):
 		self._crc_clear()
 		self._crc_update(address)
-#cwr		self._port.write(chr(address))
+#CWR		self._port.write(chr(address))
 		self._crc_update(command)
-#cwr		self._port.write(chr(command))
-		cmd_bytes = struct.pack('>BB', address, command)        #cwr
-		self._port.write(cmd_bytes)                             #cwr
+#CWR		self._port.write(chr(command))
+		cmd_bytes = struct.pack('>BB', address, command)        #CWR
+		self._port.write(cmd_bytes)                             #CWR
 		return
 
 	def _readchecksumword(self):
 		data = self._port.read(2)
 		if len(data)==2:
 			crcbytes = struct.unpack('>BB', data)
-#cwr			crc = (ord(crcbytes[0])<<8) | ord(crcbytes[1])
-			crc = (crcbytes[0])<<8 | crcbytes[1]            #cwr
+#CWR			crc = (ord(crcbytes[0])<<8) | ord(crcbytes[1])
+			crc = (crcbytes[0])<<8 | crcbytes[1]            #CWR
 			return (1,crc)	
 		return (0,0)
 		
@@ -145,9 +144,9 @@ class Roboclaw:
 		if len(data):
 			val = ord(data)
 			self._crc_update(val)
-			databyte = struct.unpack(">B", data)            #cwr
-#cwr			return (1,val)	
-			return (1,databyte[0])	                        #cwr
+			databyte = struct.unpack(">B", data)            #CWR
+#CWR			return (1,val)	
+			return (1,databyte[0])	                        #CWR
 		return (0,0)
 		
 	def _readword(self):
@@ -180,9 +179,9 @@ class Roboclaw:
 
 	def _writebyte(self,val):
 		self._crc_update(val & 0xFF)
-#cwr		self._port.write(chr(val&0xFF))
-		cmd_bytes = struct.pack('>B', val&0xFF)         #cwr
-		self._port.write(cmd_bytes)                     #cwr
+#CWR		self._port.write(chr(val&0xFF))
+		cmd_bytes = struct.pack('>B', val&0xFF)         #CWR
+		self._port.write(cmd_bytes)                     #CWR
 
 	def _writesbyte(self,val):
 		self._writebyte(val)
@@ -723,9 +722,9 @@ class Roboclaw:
 					self._crc_update(val)
 					if(val==0):
 						break
-					databyte = struct.unpack('>B', data)            #cwr
+					databyte = struct.unpack('>B', data)            #CWR
 #					str+=data[0]
-					str+= chr(databyte[0])                          #cwr
+					str+= chr(databyte[0])                          #CWR
 				else:
 					passed = False
 					break
