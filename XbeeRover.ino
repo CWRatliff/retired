@@ -153,11 +153,10 @@ void loop() {
       ibuffer[ihead] = '\0';
       lcd.setCursor(0, 0);
       lcd.print("Speed: ");
-      lcd.print(" Angle: );
+      lcd.print(" Angle: ");
       lcd.print(ibuffer[itail]);
       ihead = itail;
       }
-    }
     Serial.print(inpt);
     }
 
