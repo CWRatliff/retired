@@ -21,7 +21,7 @@ while True:
 
         if chr == 81:			#Q
             sys.exit()
-        if chr == 'F':
+        if chr == 70:
              if speed <= 90:
                 speed += (10 * accel)
                 accel = 1
@@ -33,13 +33,13 @@ while True:
                 accel = 1
 #                robot.motor(speed, steer)
 
-        elif chr == 82:                 #R
+        elif chr == 76:                 #L
             if steer > left_limit:
                 steer -= (2 * accel)
                 accel = 1
 #                robot.motor(speed, steer)
 
-        elif chr == 76:                 #L
+        elif chr == 82:                 #R
             if steer < right_limit:
                 steer += (2 * accel)
                 accel = 1
@@ -62,4 +62,18 @@ while True:
 
 #        elif chr == 'X':
 #           robot.stop_all()
-        print("Motor speed, steer "+str(speed)+", "+str(steer))			
+        print("Motor speed, steer "+str(speed)+", "+str(steer))
+        
+        bus.write_byte(addr, ord('{'))
+        bus.write_byte(addr, ord('v'))
+        spd = hex(speed & 0xff)
+        bus.write_byte(addr, ord(spd[2:3]))
+        if len(spd) > 3:
+            bus.write_byte(addr, ord(spd[3:4]))
+        bus.write_byte(addr, ord(','))
+        sta = hex(steer & 0xff)
+        bus.write_byte(addr, ord(sta[2:3]))
+        if len(sta) > 3:
+            bus.write_byte(addr, ord(sta[3:4]))
+        bus.write_byte(addr, ord('}'))
+
