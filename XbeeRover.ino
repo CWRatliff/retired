@@ -3,9 +3,10 @@
 // joystick algorithm adapted from Calvin Hass http://www.impulseadventure.com/elec/
 
 #include <PS2X_lib.h>
-#include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
 
+#define FALSE       0
+#define TRUE        !FALSE
 #define BUFF        256
 
 #define PS2_DAT        11
@@ -14,6 +15,10 @@
 #define PS2_CLK         8
 
 LiquidCrystal lcd(45, 43, 41, 53, 51, 49, 47);
+
+//  Xbee  Mega
+//  2     19 rx1
+//  3     18 tx1
 
 #define ANGLE       'A'     // tool boom angle
 #define BACK        'B'     // reverse drive motion
@@ -60,21 +65,30 @@ float fMotPremixL, fMotPremixR;
 float fPivScale;
 float fPivYLimit = 32.0;
 
-char  ibuffer[BUFF];
+int   flgup = TRUE;
+int   flgdown = TRUE;
+int   flgleft = TRUE;
+int   flgright = TRUE;
+
+char  ibuffer[BUFF];              // Xbee software input buffer
 int   itail = 0;
 int   ihead = 0;
 
+//================================================================
+// 1-byte int to two hex bytes
 void btoh(int binp, int &hob, int &lob) {
   hob = binp / 16;
   lob = binp - hob * 16;
  }
-
+//===============================================================
 // cvt hex digits to uint
-int shtoi(char* &st) {
+int shtoi(char* st) {
   char  c;
   int   hval = 0;
 
   for (c = *st; isHexadecimalDigit(c); c = *++st) {
+    if (c >= 'a')
+      c -= ('a' - 'A');
     c = c - '0';
     if (c > 9)
       c -= 7;
@@ -82,13 +96,20 @@ int shtoi(char* &st) {
     }
   return (hval);
   }
-  
-void xmit(char code, int amt) {
+//===================================================================  
+void xmit(char code) {
+  Serial1.print("{");
+  Serial1.print(code);
+  Serial1.print("}");
+  } 
+//===================================================================  
+void xmit1(char code, int amt) {
   Serial1.print("{");
   Serial1.print(code);
   Serial1.print(lowByte(amt), HEX);
   Serial1.print("}");
   } 
+//====================================================================
 void setup(){
  
   Serial.begin(115200);
@@ -144,20 +165,36 @@ void loop() {
      if you don't enable the rumble, use ps2x.read_gamepad(); with no values
      You should call this at least once a second
    */  
-
-   if (Serial1.available()) {
+  char* str;
+  int   spd;
+  int   ang;
+  
+   while (Serial1.available()) {               // Xbee input from motor control RPi
     inpt = Serial1.read();
-    ibuffer[ihead++] = inpt;
-    ihead &= BUFF;
-    if (inpt == '}') {
-      ibuffer[ihead] = '\0';
-      lcd.setCursor(0, 0);
-      lcd.print("Speed: ");
-      lcd.print(" Angle: ");
-      lcd.print(ibuffer[itail]);
-      ihead = itail;
+    if (inpt == '{') {
+      ihead = 0;
+      continue;
       }
-    Serial.print(inpt);
+    if ((ihead >= 0) && (inpt != '}')) {
+      ibuffer[ihead++] = inpt;
+      continue;
+      }
+    ibuffer[ihead] = '\0';
+    lcd.setCursor(0, 0);
+    lcd.print("Spd: ");
+    str = &ibuffer[1];
+    spd = shtoi(str);
+    if (spd > 127)
+      spd = spd - 256;
+    lcd.print(spd, DEC);
+    str = (ibuffer[2] == ',') ? &ibuffer[3] : &ibuffer[4];
+    ang = shtoi(str);
+    if (ang > 127)
+      ang = ang - 256;
+    lcd.print(" Ang: ");
+    lcd.print(ang, DEC);
+    lcd.print("   ");
+//    Serial.println(ibuffer);
     }
 
   if(error == 1) //skip loop if no controller found
@@ -175,41 +212,54 @@ void loop() {
     if(ps2x.Button(PSB_SELECT)) {
       Serial.println("Select is being held");
       }
-
     if(ps2x.Button(PSB_PAD_UP)) {      //will be TRUE as long as button is pressed
-      Serial.print("Up held this hard: ");
-      speed = ps2x.Analog(PSAB_PAD_UP);
-      Serial.println(speed, DEC);
-      btoh(speed, sphi, splo);
-      Serial1.print("{F");
-      Serial1.print(sphi, HEX);
-      Serial1.print(splo, HEX);
-      Serial1.print("}");
-    }
+      if (flgup) {
+        speed = ps2x.Analog(PSAB_PAD_UP);
+        Serial.println(speed, DEC);
+        xmit1(FWD, speed);
+        flgup = FALSE;
+        }
+      }
+    if (ps2x.ButtonReleased(PSB_PAD_UP))
+      flgup = TRUE;
+      
     if(ps2x.Button(PSB_PAD_RIGHT)){
-      Serial.print("Right held this hard: ");
-      speed = ps2x.Analog(PSAB_PAD_RIGHT);
-      Serial.println(speed, DEC);
-      Serial1.print("{R");
-      Serial1.print(speed, HEX);
-      Serial1.print("}");
-   }
+      if (flgright) {
+        speed = ps2x.Analog(PSAB_PAD_RIGHT);
+        xmit1(RIGHT, speed);
+        flgright = FALSE;
+        }
+      }
+     if (ps2x.ButtonReleased(PSB_PAD_RIGHT))
+      flgright = TRUE;
+      
     if(ps2x.Button(PSB_PAD_LEFT)){
-      Serial.print("LEFT held this hard: ");
-      speed = ps2x.Analog(PSAB_PAD_LEFT);
-      Serial.println(speed, DEC);
-      Serial1.print("{L");
-      Serial1.print(speed, HEX);
-      Serial1.print("}");
-    }
+      if (flgleft) {
+        speed = ps2x.Analog(PSAB_PAD_LEFT);
+        xmit1(LEFT, speed);
+        flgleft = FALSE;
+        }
+      }
+    if (ps2x.ButtonReleased(PSB_PAD_LEFT))
+      flgleft = TRUE;
+      
     if(ps2x.Button(PSB_PAD_DOWN)){
-      Serial.print("DOWN held this hard: ");
-      speed = ps2x.Analog(PSAB_PAD_DOWN);
-      Serial.println(speed, DEC);
-      Serial1.print("{B");
-      Serial1.print(speed, HEX);
-      Serial1.print("}");
-   }   
+      if (flgdown) {
+        speed = ps2x.Analog(PSAB_PAD_DOWN);
+        xmit1(BACK, speed);
+        flgdown = FALSE;
+        }
+      }
+    if (ps2x.ButtonReleased(PSB_PAD_DOWN))
+      flgdown = TRUE;
+      
+    if(ps2x.Button(PSB_L3)){
+      xmit(STOP);
+      }
+    if(ps2x.Button(PSB_L2)){
+      xmit(ZERO);
+      }
+//================================================================================== 
 /*    vibrate = ps2x.Analog(PSAB_CROSS);  //this will set the large motor vibrate speed based on how hard you press the blue (X) button
     if (ps2x.NewButtonState()) {        //will be TRUE if any button changes state (on to off, or off to on)
       if(ps2x.Button(PSB_L3))
@@ -231,6 +281,7 @@ void loop() {
     if(ps2x.ButtonReleased(PSB_SQUARE))              //TRUE if button was JUST released
       Serial.println("Square just released");     
 */
+//=======================================================================
 /*
     if (ps2x.Button(PSB_L2)) {
        if (ps2x.ButtonPressed(PSB_CROSS)) {
