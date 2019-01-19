@@ -65,7 +65,7 @@ float fMotPremixL, fMotPremixR;
 float fPivScale;
 float fPivYLimit = 32.0;
 
-int   flgup = TRUE;
+int   flgup = TRUE;               // key debounce
 int   flgdown = TRUE;
 int   flgleft = TRUE;
 int   flgright = TRUE;
@@ -116,8 +116,6 @@ void setup(){
 
   lcd.begin(20, 4);
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Hello World!");
   Serial1.begin(9600);
   
   delay(300);  //added delay to give wireless ps2 module some time to startup, before configuring it
@@ -146,6 +144,10 @@ void setup(){
       break;
     case 1:
       Serial.print("DualShock Controller found ");
+      lcd.setCursor(0, 0);
+      lcd.print("Speed: ");
+      lcd.setCursor(0, 1);
+      lcd.print("Angle: ");
       break;
     case 2:
       Serial.print("GuitarHero Controller found ");
@@ -158,7 +160,7 @@ void setup(){
    xzero = 128;
    yzero = 128;
 }
-
+//=========================================================================
 void loop() {
   /* You must Read Gamepad to get new values and set vibration values
      ps2x.read_gamepad(small motor on/off, larger motor strenght from 0-255)
@@ -180,18 +182,18 @@ void loop() {
       continue;
       }
     ibuffer[ihead] = '\0';
-    lcd.setCursor(0, 0);
-    lcd.print("Spd: ");
+    lcd.setCursor(7, 0);
     str = &ibuffer[1];
     spd = shtoi(str);
     if (spd > 127)
       spd = spd - 256;
     lcd.print(spd, DEC);
+    lcd.print("   ");
     str = (ibuffer[2] == ',') ? &ibuffer[3] : &ibuffer[4];
     ang = shtoi(str);
     if (ang > 127)
       ang = ang - 256;
-    lcd.print(" Ang: ");
+    lcd.setCursor(7, 1);
     lcd.print(ang, DEC);
     lcd.print("   ");
 //    Serial.println(ibuffer);
@@ -253,13 +255,13 @@ void loop() {
     if (ps2x.ButtonReleased(PSB_PAD_DOWN))
       flgdown = TRUE;
       
-    if(ps2x.Button(PSB_L3)){
+    if(ps2x.Button(PSB_L3)){              // left joystick button
       xmit(STOP);
       }
-    if(ps2x.Button(PSB_L2)){
+    if(ps2x.Button(PSB_L2)){              // left upper trigger button
       xmit(ZERO);
       }
-//================================================================================== 
+//========================================================================
 /*    vibrate = ps2x.Analog(PSAB_CROSS);  //this will set the large motor vibrate speed based on how hard you press the blue (X) button
     if (ps2x.NewButtonState()) {        //will be TRUE if any button changes state (on to off, or off to on)
       if(ps2x.Button(PSB_L3))
