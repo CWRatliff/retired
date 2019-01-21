@@ -21,31 +21,31 @@ while True:
 
         if chr == 81:			#Q
             sys.exit()
-        if chr == 70:
+        if chr == 70:                   #F forward
              if speed <= 90:
                 speed += (10 * accel)
                 accel = 1
 #                robot.motor(speed, steer)
 
-        elif chr == 66:                 #B
+        elif chr == 66:                 #B back
             if speed >= -90:
                 speed -= (10 * accel)
                 accel = 1
 #                robot.motor(speed, steer)
 
-        elif chr == 76:                 #L
+        elif chr == 76:                 #L left
             if steer > left_limit:
                 steer -= (2 * accel)
                 accel = 1
 #                robot.motor(speed, steer)
 
-        elif chr == 82:                 #R
+        elif chr == 82:                 #R right
             if steer < right_limit:
                 steer += (2 * accel)
                 accel = 1
 #                robot.motor(speed, steer)
 
-        elif chr == 83:                 #S
+        elif chr == 83:                 #S stop
             speed = 0
 #            robot.motor(speed, steer)
 
@@ -55,7 +55,7 @@ while True:
                 dt = -2
                 while abs(steer) > 2:
                     steer += dt
-                    robot.motor(speed, steer)
+#                   robot.motor(speed, steer)
                     time.sleep(0.1)
             steer = 0
 #           robot.motor(speed, steer)
