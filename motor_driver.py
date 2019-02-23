@@ -52,7 +52,7 @@ class motor_driver:
 		else:
 			self.rc.BackwardM1(address, abs(v1))
 			self.rc.BackwardM2(address, abs(v2))
-		print("m1, m2 = "+str(v1)+", "+str(v2))
+#		print("m1, m2 = "+str(v1)+", "+str(v2))
 
 	def stop_all(self):
 		self.turn_motor(0X80, 0, 0, 0)
@@ -110,5 +110,5 @@ class motor_driver:
 			self.turn_motor(0x80, vel, 1, 1)
 			self.turn_motor(0x81, vel, 1, 1)
 			self.turn_motor(0x82, vel, 1, 1)
-		print("v, vout, vin "+str(vel)+", "+str(voc)+", "+str(vic))
-		self.diag()
+#		print("v, vout, vin "+str(vel)+", "+str(voc)+", "+str(vic))
+#		self.diag()

@@ -16,8 +16,9 @@ robot = motor_driver.motor_driver()
 
 while True:
     chr = int(bus.read_byte(addr))
+#    if (chr > 0):
+#       print(chr)
     if (chr >= 65) and (chr <= 90):
-        print(chr)
 
         if chr == 81:			#Q
             sys.exit()
@@ -45,23 +46,23 @@ while True:
                 accel = 1
                 robot.motor(speed, steer)
 
-        elif chr == 'G':                #GEE
-            dt = 2
+        elif chr == 71:                #GEE
+            dt = 1
             if steer < (right_limit - 1):
                 while (steer < right_limit):
                     steer += dt
                     robot.motor(speed, steer)
-                    time.sleep(0.1)
+#                    time.sleep(0.05)
             steer = right_limit
             robot.motor(speed, steer)
 
-        elif chr == 'H':                #HAW
-            dt = 2
+        elif chr == 72:                #HAW
+            dt = 1
             if steer > (left_limit + 1):
-                while (steer . left_limit):
+                while (steer > left_limit):
                     steer -= dt
                     robot.motor(speed, steer)
-                    time.sleep(0.1)
+#                    time.sleep(0.05)
             steer = left_limit
             robot.motor(speed, steer)
 
@@ -70,13 +71,13 @@ while True:
             robot.motor(speed, steer)
 
         elif chr == 90:                 #Z
-            dt = 2
+            dt = 1
             if steer > 0:
-                dt = -2
-                while abs(steer) > 2:
+                dt = -1
+                while abs(steer) > 1:
                     steer += dt
                     robot.motor(speed, steer)
-                    time.sleep(0.1)
+#                    time.sleep(0.05)
             steer = 0
             robot.motor(speed, steer)
 
@@ -96,3 +97,6 @@ while True:
         if len(sta) > 3:
             bus.write_byte(addr, ord(sta[3:4]))
         bus.write_byte(addr, ord('}'))
+        #end if =======================
+    # end loop ========================
+robot.deinit()
