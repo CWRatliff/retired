@@ -11,13 +11,21 @@ speed = 0
 accel = 1
 left_limit = -35
 right_limit = 35
+epoch = time.time()
 
 robot = motor_driver.motor_driver()
 
+#while True:                             #purge xbee
+#    chr = int(bus.read_byte(addr))
+#    if (chr == 0):
+#        break
+
 while True:
     chr = int(bus.read_byte(addr))
-#    if (chr > 0):
-#       print(chr)
+    if (chr == 42):
+#       print("ping")
+       epoch = time.time()
+       
     if (chr >= 65) and (chr <= 90):
 
         if chr == 81:			#Q
@@ -81,8 +89,11 @@ while True:
             steer = 0
             robot.motor(speed, steer)
 
-#        elif chr == 'X':
-#           robot.stop_all()
+        elif chr == 88:                #X exit Select button
+            robot.stop_all()
+            speed = 0
+            exit()
+            
         print("Motor speed, steer "+str(speed)+", "+str(steer))
         
         bus.write_byte(addr, ord('{'))
@@ -97,6 +108,14 @@ while True:
         if len(sta) > 3:
             bus.write_byte(addr, ord(sta[3:4]))
         bus.write_byte(addr, ord('}'))
+        epoch = time.time()
         #end if =======================
+
+    if (time.time() > (epoch + 1.1)):
+#        print(time.time(),5)
+#        print(epoch,5)
+        robot.stop_all()
+        speed = 0;
+        
     # end loop ========================
 robot.deinit()
