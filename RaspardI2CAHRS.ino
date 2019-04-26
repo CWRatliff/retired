@@ -35,7 +35,7 @@ Madgwick filter;
 // relay data between Xbee and RPi
 // 190116 
 const int  addrI2C = 0x8;
-
+unsigned long epoch;
 char  ibuffer[256];
 char  obuffer[256];
 
@@ -43,30 +43,38 @@ int  ihead = 0;
 int  itail = 0;
 int  ohead = 0;
 int  otail = 0;
-
+char  str[100];
+int   strflag = 0;
+//========================================================================
+void charpush(char xchr) {
+  ibuffer[ihead++] = xchr;
+  if (ihead > 255)
+    ihead = 0;
+  }
+//========================================================================
 void bufpush(char xchr) {
-    ibuffer[ihead++] = xchr;    // software buffering probably not needed
-    if (ihead > 255)
-      ihead = 0;
+    char  *p;
+
+    charpush(xchr);
     if (xchr == '}') {
-      ibuffer[ihead++] = '\0';
-      if (ihead > 255)
-        ihead = 0;
+      charpush('\0');
+      if (strflag) {
+        p = &str[0];
+        while (*p)
+          charpush(*p);
+        charpush('\0');
+        strflag = 0;
+        }
       }
   }
-
-void bufpushstr(char *str) {
-  while (*str)
-    bufpush(*str++);
-  }
-
+//========================================================================
 void setup() {
+  epoch = millis();
   Serial.begin(115200);
   Serial1.begin(9600);      // Xbee wired to RX1(19),Tx1(18)
   Wire.begin(addrI2C);    // i2c channel
   Wire.onReceive(receiveEvent);  // register event
   Wire.onRequest(requestCommand);
-
 
   // Wait for the Serial Monitor to open (comment out to run without Serial Monitor)
   // while(!Serial);
@@ -85,12 +93,11 @@ void setup() {
     while(1);
   }
 
-
   // Filter expects 70 samples per second
   // Based on a Bluefruit M0 Feather ... rate should be adjuted for other MCUs
   filter.begin(10);
   }
-
+//========================================================================
 void loop(void) {
   char  str[20];
   char  xchr;
@@ -147,21 +154,20 @@ void loop(void) {
   Serial.print(" ");
   Serial.println(roll);
   */
-  sprintf(str, "{O%d}", heading);
-  bufpushstr(&str[0]);
-  Serial.print(str);
+  if ((millis() - epoch) > 1000) {
+    sprintf(str, "{O%d}", heading);
+    strflag = 1;
+    Serial.print(str);
+    epoch = millis();
+    }
 
-  delay(10);
-
+    delay(10);
 
     xchr = Serial1.read();
     bufpush(xchr);
-    Serial.println(ibuffer);
-      
+    Serial.println(ibuffer); 
     }
-
-
-
+//========================================================================
 // I2C receive master data
 void receiveEvent(int howMany) {
   while (Wire.available()) {
@@ -169,6 +175,7 @@ void receiveEvent(int howMany) {
     Serial1.write(c);
     }
   }
+//========================================================================
 // I2C send data to master
 void requestCommand() {
   unsigned int c;
