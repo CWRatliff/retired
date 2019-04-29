@@ -1,4 +1,4 @@
-//190210
+//190427
 // joystick algorithm adapted from Calvin Hass http://www.impulseadventure.com/elec/
 
 #include <PS2X_lib.h>
@@ -21,13 +21,13 @@ Adafruit_LiquidCrystal lcd(0);
 //  2     19 rx1
 //  3     18 tx1
 
-#define ACK         '*'     // Acknowledge
+#define ACK         '*'     // Ping
 #define ANGLE       'A'     // tool boom angle
 #define BACK        'B'     // reverse drive motion
 #define DIRECTION   'D'     // tool base
 #define FWD         'F'     // forward drive motion
-#define  GEE     'G'   // hard right turn
-#define HAW     'H'   // hard left turn
+#define GEE			'G'		// hard right turn
+#define HAW			'H'		// hard left turn
 #define JIB         'J'     // tool angle
 #define LEFT        'L'     // left drive motion
 #define MULTI       'M'     // multi side drive motion
@@ -37,6 +37,7 @@ Adafruit_LiquidCrystal lcd(0);
 #define STOP        'S'     // stop drive motors
 #define TILT        'T'     // camera tilt
 #define SWEEP       'W'     // sweep sensor pack
+#define EXIT		'X'		// exit rover program
 #define ZERO        'Z'     // zero steering angle
 
 #define JOYDELAY    5000
@@ -84,9 +85,18 @@ int   epoch;                      // last xmission time
 //================================================================
 // 1-byte int to two hex bytes
 void btoh(int binp, int &hob, int &lob) {
-  hob = binp / 16;
-  lob = binp - hob * 16;
- }
+	hob = binp / 16;
+	lob = binp - hob * 16;
+	}
+//===============================================================
+// print text numbers to lcd
+void lcdout(char *s) {
+	char	c;
+	while (IsDigit(*s) || *s == '-') {
+		c = *s;
+		lcd.print(c);
+		}
+	}
 //===============================================================
 // cvt hex digits to uint
 int shtoi(char* st) {
@@ -154,14 +164,16 @@ void setup(){
     case 1:
       Serial.print("DualShock Controller found ");
       lcd.setCursor(0, 0);
-      lcd.print("Speed: ");
+      lcd.print("Spd: ");
       lcd.setCursor(0, 1);
-      lcd.print("Angle: ");
+      lcd.print("Str: ");
+	  lcd.setCursor(0, 2);
+	  lcd.print("Hdg: ");
       break;
     case 2:
       Serial.print("GuitarHero Controller found ");
       break;
-  case 3:
+	case 3:
       Serial.print("Wireless Sony DualShock Controller found ");
       break;
    }
@@ -192,20 +204,18 @@ void loop() {
       continue;
       }
     ibuffer[ihead] = '\0';
-    lcd.setCursor(7, 0);
+    lcd.setCursor(5, 0);
     str = &ibuffer[1];
-    spd = shtoi(str);
-    if (spd > 127)
-      spd = spd - 256;
-    lcd.print(spd, DEC);
-    lcd.print("   ");
-    str = (ibuffer[2] == ',') ? &ibuffer[3] : &ibuffer[4];
-    ang = shtoi(str);
-    if (ang > 127)
-      ang = ang - 256;
-    lcd.setCursor(7, 1);
-    lcd.print(ang, DEC);
-    lcd.print("   ");
+	lcdout(str);				// print speed
+	lcd.print("   ");
+	str++;
+    lcd.setCursor(5, 1);
+	lcdout(str);				// print steering angle
+	lcd.print("   ");
+	str++;
+    lcd.setCursor(5, 2);
+	lcdout(str);				// print compass heading
+	lcd.print("   ");
 //    Serial.println(ibuffer);
     }
 
@@ -219,6 +229,9 @@ void loop() {
   else { //DualShock Controller
     ps2x.read_gamepad(false, vibrate); //read controller and set large motor to spin at 'vibrate' speed
     
+	if (ps2x.Button(PSB_SELECT))		// bail out of rover program
+		xmit(EXIT);
+
     if(ps2x.Button(PSB_PAD_UP)) {      //will be TRUE as long as button is pressed
       if (flgup) {
         xmit(FWD);
@@ -267,8 +280,10 @@ void loop() {
     if(ps2x.Button(PSB_L1))              // left upper trigger button
       xmit(ZERO);
 
-    if ((millis() - epoch) > 1000)
+    if ((millis() - epoch) > 1000) {}
       xmit('*');                          // were still alive
+	  epoch = millis();
+	  }
       
   delay(50);  
   }
