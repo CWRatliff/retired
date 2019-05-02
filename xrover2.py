@@ -23,21 +23,21 @@ robot = motor_driver.motor_driver()
 
 while True:
     chr = int(bus.read_byte(addr))
-	if (chr == 123):					# '{' -> start of message
-		wstr = ""
-		while True:
-			chr = int(bus.read_byte(addr))
-			wstr += chr;
-			if (chr == 125):			# '}' -> end of message
-				continue
-			if (chr == 123):			# restart
-				wstr = ""
-		chr = wstr[0]					# grab lead character
+    if (chr == 123):					# '{' -> start of message
+        wstr = ""
+        while True:
+            chr = int(bus.read_byte(addr))
+            wstr += chr;
+            if (chr == 125):			# '}' -> end of message
+                continue
+            if (chr == 123):			# restart
+                wstr = ""
+        chr = wstr[0]					# grab lead character
 
     if (chr == 42):
 #       print("ping")
-       epoch = time.time()
-	   continue
+        epoch = time.time()
+        continue
        
     if (chr >= 65) and (chr <= 90):
 
@@ -108,27 +108,28 @@ while True:
             speed = 0
             exit()
             
-		elif chr == 79:					#O - orientation esp hdg from arduino
-			eos = wstr.find('}')
-			hdg = int(wstr[1:eos])
+        elif chr == 79:					#O - orientation esp hdg from arduino
+            eos = wstr.find('}')
+            hdg = int(wstr[1:eos])
+            print(hdg)
 
         #end if (chr >= 65) and (chr <= 90) =======================
 
-    msg = "{v"+str(speed)+","+str(steer)+","+str(hdg)+"}""
-	print(msg)
-	i = 0
-	while True:
-		xchr = msg[i]
-		bus.write_byte(addr, ord(xchr))
-		if (xchr == '}'):
-			continue
+        msg = "{v"+str(speed)+","+str(steer)+","+str(hdg)+""
+        print(msg)
+        i = 0
+        while True:
+            xchr = msg[i]
+            bus.write_byte(addr, ord(xchr))
+            if (xchr == '}'):
+                continue
 
     epoch = time.time()
 
     if (time.time() > (epoch + 1.1)):
 #        print(time.time(),5)
 #        print(epoch,5)
-        robot.stop_all()
+#        robot.stop_all()
         speed = 0;
         
     # end loop ========================
