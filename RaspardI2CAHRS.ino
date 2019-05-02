@@ -85,12 +85,15 @@ void setup() {
   if(!gyro.begin()){
     /* There was a problem detecting the gyro ... check your connections */
     Serial.println("Ooops, no gyro detected ... Check your wiring!");
+ Serial.println("");
+ delay(1000);
     while(1);
   }
-
+Serial.println("after gyro");
   if(!accelmag.begin(ACCEL_RANGE_4G)){
     Serial.println("Ooops, no FXOS8700 detected ... Check your wiring!");
-    while(1);
+ Serial.println("");
+ while(1);
   }
 
   // Filter expects 70 samples per second
@@ -145,6 +148,7 @@ void loop(void) {
   float roll = filter.getRoll();
   float pitch = filter.getPitch();
   float heading = filter.getYaw();
+  int ihead = heading;
 /*
   Serial.print(millis());
   Serial.print(" - Orientation: ");
@@ -153,11 +157,11 @@ void loop(void) {
   Serial.print(pitch);
   Serial.print(" ");
   Serial.println(roll);
-  */
+*/  
   if ((millis() - epoch) > 1000) {
-    sprintf(str, "{O%d}", heading);
+    sprintf(str, "{O%d}", ihead);
     strflag = 1;
-    Serial.print(str);
+    Serial.println(str);
     epoch = millis();
     }
 
@@ -165,7 +169,7 @@ void loop(void) {
 
     xchr = Serial1.read();
     bufpush(xchr);
-    Serial.println(ibuffer); 
+//    Serial.println(ibuffer); 
     }
 //========================================================================
 // I2C receive master data
