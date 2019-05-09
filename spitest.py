@@ -2,6 +2,7 @@ import spidev
 import time
 
 buff="abcdef"
+NUL = [0x00]
 spi = spidev.SpiDev()
 rc = spi.open(0, 0)
 print ("rc = "+str(rc))
@@ -14,20 +15,10 @@ while True:
     msg = [0x41]
     count = spi.xfer2(msg)
     print ("interrog count returned " + str(count[0]))
-
-#    buff = spi.xfer2(msg)
-    cbuff = chr(spi.xfer2(msg)[0])
-    msg = [0x42]
-#    buff += spi.xfer2(msg)
-    cbuff += chr(spi.xfer2(msg)[0])
-    msg = [0x43]
-    cbuff += chr(spi.xfer2(msg)[0])
-    msg = [0x44]
-    cbuff += chr(spi.xfer2(msg)[0])
-    msg = [0x45]
-    cbuff += chr(spi.xfer2(msg)[0])
-
-    msg=[0x0d]
-    cbuff += chr(spi.xfer2(msg)[0])
+    cbuff = ""
+    for i in range(0, count[0]):
+        cbuff += chr(spi.xfer2(msg)[0])
+    spi.xfer2(NUL)
+    
     print(cbuff)
     time.sleep(5)
