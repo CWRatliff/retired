@@ -35,7 +35,8 @@ Madgwick filter;
 */
 // relay data between Xbee and RPi
 // 190116 
-const int  addrI2C = 0x8;
+//const int  addrI2C = 0x8;
+// 190515 switch from I2C to SPI
 unsigned long epoch;
 char  ibuffer[256];
 char  obuffer[256];
@@ -44,11 +45,9 @@ int  ihead = 0;
 int  itail = 0;
 int  ohead = 0;
 int  otail = 0;
-int   istrt = 0;
-int   icount = 0;
 int   msgcount = 0;
-char  str[100];
-int   strflag = 0;
+//char  str[100];
+//int   strflag = 0;
 
 #define MASK  0xff;
 
@@ -148,16 +147,14 @@ void loop(void) {
   Serial.println(roll);
 */  
 
-int inthead = ihead;    // need something to send
+int inthead = ihead;    // need something to send>>>>>>>>>>>>>>>>>>>>>>>>>
   // compose 'O'rientation msg for Pi
   if ((millis() - epoch) > 1000) {
-    sprintf(str, "{O%d", inthead);
+    sprintf(str, "{O%d}", inthead);
     for (char *p = &str[0]; *p; p++) {
       ibuffer[ihead++] = *p;
       ihead &= MASK;
       }
-    ibuffer[istrt] = '0x03';
-    istrt = ihead;
     msgcount++;
 
     Serial.println(str);
@@ -169,48 +166,38 @@ int inthead = ihead;    // need something to send
   // read Xbee input and upload to Pi
   while (Serial1.available()) {
     xchr = Serial1.read();
-    icount++;
+    ibuffer[ihead++] = xchr;
+    ihead &= MASK;
     if (xchr == '}') {
       ibuffer[ihead++] = 0;
+      ihead &= MASK;
       msgcount++;
-      ibuffer[istrt] = icount;
-      icount = 0;
-      ihead &= MASK;
-      istrt = ihead;
-      }
-    else {
-      ibuffer[ihead++] = xchr;
-      ihead &= MASK;
       }
     }
     
   // if any data waiting in output buffer, transmit via Xbee    
   while (ohead != otail) {
-    xchr = obuffer[otail++];
-    otail &= MASK;
-    Serial1.write(xchr);
+    if (Serial1.availableForWrite()) {
+      Serial1.write(obuffer[itail++]);
+      itail &= MASK
+      }
     }
   }
-
 //========================================================================
 // ISR for SPI slave listener
 ISR (SPI_STC_vect) {
   byte c = SPDR;
-  if (c == '?') {
-    if (msgcount == 0) {
-      SPDR = 0;
-      return;
+  if (c == 0) {               // no char, must be querry
+    if (itail != ihead) {     // anything to xfer?
+      SPDR = ibuffer[itail++];
+      itail &= MASK;
       }
-    if (c == '\0')
-      msgcount--;
-    SPDR = ibuffer[itail++];
-    itail &= MASK;
-    return;
     }
-  obuffer[ohead++] = c;
-  ohead &= MASK;
+  else {                      // rcv data from master
+    obuffer[ohead++] = c;
+    ohead &= MASK;
+    }
   }
-
 
 /*  
 //========================================================================
