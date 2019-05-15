@@ -40,21 +40,3 @@ void loop() {
       }
 
   }
-
-/*
-ISR (SPI_STC_vect) {
-  byte c = SPDR;
-  if (c == 0) {             // no char, has to be querry
-    if (itail == ihead)
-      return;               // nothing to xfer, SPDR still zero
-    SPDR = ibuff[itail++];  // get FIFO xbee rcvd data
-//    c = SPDR;
-//    Serial.print(c);
-    itail &= MASK;
-    return;
-    }
-  obuff[ohead++] = c;       // save downloaded char
-  ohead &= MASK;
-    Serial.print(c);
-  }
- */
