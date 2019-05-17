@@ -26,7 +26,7 @@ float mag_softiron_matrix[3][3] = { {  0.966, -0.037, -0.030 },
 float mag_field_strength        = 42.83F;
 // Offsets applied to raw x/y/z mag values
 float mag_offsets[3]            = { -7.93F, -16.91F, -131.57F };
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+========================================================*/
 //===================================================== RED
 // Offsets applied to raw x/y/z mag values
 float mag_offsets[3]            = { 23.01F, 66.12F, 29.91F };
@@ -47,7 +47,7 @@ float gyro_zero_offsets[3]      = { 0.0F, 0.0F, 0.0F };
 Madgwick filter;
 
 unsigned long epoch;
-char ibuffer[256] = {"{A}.{B}.{O359}.{C}."};
+char ibuffer[256];
 char obuffer[256];
 char str[10];
 volatile int itail = 0;
