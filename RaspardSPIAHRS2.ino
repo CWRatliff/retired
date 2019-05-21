@@ -60,6 +60,7 @@ volatile int prox;
 
 void setup() {
   Serial.begin(115200);
+  Serial1.begin(9600);
   pinMode(MISO, OUTPUT);
   SPCR |= _BV(SPE);           // set to slave mode
   SPI.attachInterrupt();
@@ -157,6 +158,7 @@ void loop() {
   Serial.print(" ");
   Serial.println(roll);
 */ 
+/***************************************8
   if(ohead > 0)
     p = strchr(obuffer, '}');
     if (*p == '}') {
@@ -165,6 +167,7 @@ void loop() {
       otail = 0;
       ohead = 0;
       }
+ *********************************************/
   // compose 'O'rientation msg for Pi
   if ((millis() - epoch) > 1000) {
     sprintf(str, "{O%d}.", inthead);
