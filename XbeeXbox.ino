@@ -26,8 +26,8 @@ Adafruit_LiquidCrystal lcd(0);
 #define BACK        'B'     // reverse drive motion
 #define DIRECTION   'D'     // tool base
 #define FWD         'F'     // forward drive motion
-#define GEE			'G'		// hard right turn
-#define HAW			'H'		// hard left turn
+#define GEE         'G'     // hard right turn
+#define HAW         'H'     // hard left turn
 #define JIB         'J'     // tool angle
 #define LEFT        'L'     // left drive motion
 #define MULTI       'M'     // multi side drive motion
@@ -37,7 +37,7 @@ Adafruit_LiquidCrystal lcd(0);
 #define STOP        'S'     // stop drive motors
 #define TILT        'T'     // camera tilt
 #define SWEEP       'W'     // sweep sensor pack
-#define EXIT		'X'		// exit rover program
+#define EXIT    'X'   // exit rover program
 #define ZERO        'Z'     // zero steering angle
 
 #define JOYDELAY    5000
@@ -80,23 +80,25 @@ int   flgright = TRUE;
 char  ibuffer[BUFF];              // Xbee software input buffer
 int   itail = 0;
 int   ihead = 0;
+int   piflag = FALSE;
 
 int   epoch;                      // last xmission time
 //================================================================
 // 1-byte int to two hex bytes
 void btoh(int binp, int &hob, int &lob) {
-	hob = binp / 16;
-	lob = binp - hob * 16;
-	}
+  hob = binp / 16;
+  lob = binp - hob * 16;
+  }
 //===============================================================
 // print text numbers to lcd
-void lcdout(char *s) {
-	char	c;
-	while (IsDigit(*s) || *s == '-') {
-		c = *s;
-		lcd.print(c);
-		}
-	}
+char* lcdout(char *s) {
+  char  c;
+  while (isDigit(*s) || *s == '-') {
+    c = *s++;
+    lcd.print(c);
+    }
+  return (s);
+  }
 //===============================================================
 // cvt hex digits to uint
 int shtoi(char* st) {
@@ -167,20 +169,20 @@ void setup(){
       lcd.print("Spd: ");
       lcd.setCursor(0, 1);
       lcd.print("Str: ");
-	  lcd.setCursor(0, 2);
-	  lcd.print("Hdg: ");
+    lcd.setCursor(0, 2);
+    lcd.print("Hdg: ");
       break;
     case 2:
       Serial.print("GuitarHero Controller found ");
       break;
-	case 3:
+  case 3:
       Serial.print("Wireless Sony DualShock Controller found ");
       break;
    }
    joytime = millis() + JOYDELAY;
    xzero = 128;
    yzero = 128;
-   xmit('*');             // were alive
+//   xmit('*');             // ping, were alive
 }
 //=========================================================================
 void loop() {
@@ -199,24 +201,31 @@ void loop() {
       ihead = 0;
       continue;
       }
-    if ((ihead >= 0) && (inpt != '}')) {
-      ibuffer[ihead++] = inpt;
-      continue;
+    if (inpt == '}') {
+      ibuffer[ihead] = '\0';
+      piflag = TRUE;
+      break;
       }
-    ibuffer[ihead] = '\0';
-    lcd.setCursor(5, 0);
-    str = &ibuffer[1];
-	lcdout(str);				// print speed
-	lcd.print("   ");
-	str++;
-    lcd.setCursor(5, 1);
-	lcdout(str);				// print steering angle
-	lcd.print("   ");
-	str++;
-    lcd.setCursor(5, 2);
-	lcdout(str);				// print compass heading
-	lcd.print("   ");
-//    Serial.println(ibuffer);
+    ibuffer[ihead++] = inpt;
+    }
+  if (piflag) {
+    if (ibuffer[0] == 'v') {                                 // when message complete
+      Serial.print("from Pi ");
+      Serial.println(ibuffer);
+      lcd.setCursor(5, 0);
+      str = &ibuffer[1];
+      str = lcdout(str);        // print speed
+      lcd.print("   ");
+      str++;
+      lcd.setCursor(5, 1);
+      str = lcdout(str);        // print steering angle
+      lcd.print("   ");
+      str++;
+      lcd.setCursor(5, 2);
+      str = lcdout(str);        // print compass heading
+      lcd.print("   ");
+      }
+    piflag = FALSE;
     }
 
   if(error == 1) //skip loop if no controller found
@@ -229,8 +238,8 @@ void loop() {
   else { //DualShock Controller
     ps2x.read_gamepad(false, vibrate); //read controller and set large motor to spin at 'vibrate' speed
     
-	if (ps2x.Button(PSB_SELECT))		// bail out of rover program
-		xmit(EXIT);
+  if (ps2x.Button(PSB_SELECT))    // bail out of rover program
+    xmit(EXIT);
 
     if(ps2x.Button(PSB_PAD_UP)) {      //will be TRUE as long as button is pressed
       if (flgup) {
@@ -280,11 +289,10 @@ void loop() {
     if(ps2x.Button(PSB_L1))              // left upper trigger button
       xmit(ZERO);
 
-    if ((millis() - epoch) > 1000) {}
-      xmit('*');                          // were still alive
-	  epoch = millis();
-	  }
+//    if ((millis() - epoch) > 1000) {}
+//      xmit('*');                          // were still alive
+    epoch = millis();
+    }
       
   delay(50);  
   }
-}
