@@ -19,26 +19,29 @@ volatile int ohead = 0;
 volatile int prox;
 
 #define MASK 0xff
+
 /* Set the delay between fresh samples */
 #define BNO055_SAMPLERATE_DELAY_MS (100)
+#define DECLINATION 12.1387                               // for Camarillo, CA
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 // cal data from BNO example program
 #ifdef BLUE
 adafruit_bno055_offsets_t caldata = {-13,   -3, -27,      // accel
-                                    -1,      0,   0,      // gyro
                                     -375, -195, -75,      // mag
+                                    -1,      0,   0,      // gyro
                                     1000,                 // accel radius
                                     429};                 // mag radius
 #endif
 
 #ifdef RED
-adafruit_bno055_offsets_t caldata = {-13,   -3, -27,      // accel
-                                    -1,      0,   0,      // gyro
-                                    -375, -195, -75,      // mag
+adafruit_bno055_offsets_t caldata = {-22,  -60, -18,      // accel
+                                    -473, -439,-235,      // mag
+                                    -2,     -1,   2,      // gyro
                                     1000,                 // accel radius
-                                    429};                 // mag radius
+                                    687};                 // mag radius
 #endif
+
 
 void setup() {
   Serial.begin(115200);
@@ -48,8 +51,8 @@ void setup() {
   SPI.attachInterrupt();
 
   bno.begin();
-  bno.setExtCrystalUse(true);
   bno.setSensorOffsets(caldata);
+  bno.setExtCrystalUse(true);
   }
 //============================================================
 ISR (SPI_STC_vect) {
@@ -76,60 +79,28 @@ void loop() {
 
   /* Get the floating point data */
   float yaw = event.orientation.x;
-  float pitch = event.orientation.y;
-  float roll = event.orientation.z;
-
+  float roll = event.orientation.y;
+  float pitch = event.orientation.z;
 
   /* Wait the specified delay before requesting nex data */
   delay(BNO055_SAMPLERATE_DELAY_MS);
-
-  int inthead = yaw;
-
 
   Serial.print(millis());
   Serial.print(" - Orientation: ");
   Serial.print(yaw);
   Serial.print(" ");
-  Serial.print(pitch);
+  Serial.print(roll);
   Serial.print(" ");
-  Serial.println(roll);
+  Serial.println(pitch);
 
-/*
-  imu::Vector<3> magnet = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
-
-  Serial.print("Mag vector: ");
-  Serial.print(magnet.x());
-  Serial.print(", ");
-  Serial.print(magnet.y());
-  Serial.print(", ");
-  Serial.print(magnet.z());
-
-  double ang = atan2(magnet.y(), magnet.x()) *180 / M_PI;
-  Serial.print(",  atan : ");
-  Serial.print(ang);
-  ang = yaw - ang;
-  if (ang < 0)
-    ang += 360;
-  if (ang > 360)
-    ang -= 360;
-  Serial.print(" hdg : ");
-  Serial.println(ang);
-  inthead = ang;
-  */
-  delay(300);
-/***************************************8
-  if(ohead > 0)
-    p = strchr(obuffer, '}');
-    if (*p == '}') {
-      Serial.println(obuffer);
-      *p = ' ';
-      otail = 0;
-      ohead = 0;
-      }
- *********************************************/
   // compose 'O'rientation msg for Pi
   if ((millis() - epoch) > 1000) {
-    sprintf(str, "{O%d}.", inthead);
+    int hdg = yaw - DECLINATION;            // make into True North;
+    if (hdg < 0)
+      hdg += 360;
+    if (hdg > 360)
+      hdg -= 360;
+    sprintf(str, "{O%d}.", hdg);
     for (char *p = &str[0]; *p; p++) {
       ibuffer[ihead++] = *p;
       ihead &= MASK;
@@ -146,7 +117,6 @@ void loop() {
     if (xchr == '}') {
       ibuffer[ihead++] = 0;
       ihead &= MASK;
-//      msgcount++;
       }
     }
     
