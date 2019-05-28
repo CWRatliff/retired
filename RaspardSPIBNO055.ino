@@ -5,8 +5,8 @@
 #include <utility/imumaths.h>
 #include <math.h>
 
-//#define BLUE
-#define RED
+#define BLUE
+//#define RED
 
 unsigned long epoch;
 char ibuffer[256];
@@ -22,7 +22,8 @@ volatile int prox;
 
 /* Set the delay between fresh samples */
 #define BNO055_SAMPLERATE_DELAY_MS (100)
-#define DECLINATION 12.1387                               // for Camarillo, CA
+#define VARIATION 12.1387                               // for Camarillo, CA
+#define ROVER     180
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 // cal data from BNO example program
@@ -42,6 +43,33 @@ adafruit_bno055_offsets_t caldata = {-22,  -60, -18,      // accel
                                     687};                 // mag radius
 #endif
 
+/*
+    Display the raw calibration offset and radius data
+    */
+/**************************************************************************/
+void displaySensorOffsets(const adafruit_bno055_offsets_t &calibData)
+{
+    Serial.print("\nAccelerometer: ");
+    Serial.print(calibData.accel_offset_x); Serial.print(" ");
+    Serial.print(calibData.accel_offset_y); Serial.print(" ");
+    Serial.print(calibData.accel_offset_z); Serial.print(" ");
+
+    Serial.print("\nGyro: ");
+    Serial.print(calibData.gyro_offset_x); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_y); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_z); Serial.print(" ");
+
+    Serial.print("\nMag: ");
+    Serial.print(calibData.mag_offset_x); Serial.print(" ");
+    Serial.print(calibData.mag_offset_y); Serial.print(" ");
+    Serial.print(calibData.mag_offset_z); Serial.print(" ");
+
+    Serial.print("\nAccel Radius: ");
+    Serial.print(calibData.accel_radius);
+
+    Serial.print("\nMag Radius: ");
+    Serial.println(calibData.mag_radius);
+}
 
 void setup() {
   Serial.begin(115200);
@@ -51,7 +79,10 @@ void setup() {
   SPI.attachInterrupt();
 
   bno.begin();
+  displaySensorOffsets(caldata);
   bno.setSensorOffsets(caldata);
+  bno.getSensorOffsets(caldata);
+  displaySensorOffsets(caldata);
   bno.setExtCrystalUse(true);
   }
 //============================================================
@@ -95,7 +126,9 @@ void loop() {
 
   // compose 'O'rientation msg for Pi
   if ((millis() - epoch) > 1000) {
-    int hdg = yaw - DECLINATION;            // make into True North;
+    // Can Dead Men Vote Twice At Elections
+    int hdg = yaw + VARIATION;            // make Mag heading into True
+    hdg += ROVER;                         // orientation on rover chassis
     if (hdg < 0)
       hdg += 360;
     if (hdg > 360)
