@@ -14,6 +14,7 @@ volatile int ihead = 0;
 volatile int otail = 0;
 volatile int ohead = 0;
 volatile int prox;
+int oldhdg = 0;
 
 #define MASK 0xff
 
@@ -36,7 +37,7 @@ void setup() {
 //============================================================
 ISR (SPI_STC_vect) {
   byte c = SPDR;
-  if (c == 0) {               // no char, has to be querry
+  if (c == 0) {               // no char, has to be query
     if (itail != ihead) {     // something to xfer
       SPDR = ibuffer[itail++];  // get FIFO xbee rcvd data
       itail &= MASK;
@@ -51,15 +52,28 @@ ISR (SPI_STC_vect) {
 void loop() {
   char* p;
   char  xchr;
-
-  //Look for reports from the IMU
+    float qx;
+    float qy;
+    float qz;
+    float qw;
+    float quatRadianAccuracy;
+    double sinr_cosp;
+    double cosr_cosp;
+    double roll;
+    double sinp;
+    double pitch;
+    double siny_cosp;
+    double cosy_cosp;  
+    double yaw;
+    int hdg;
+    
   if (myIMU.dataAvailable() == true) {
-    float qx = myIMU.getQuatI();
-    float qy = myIMU.getQuatJ();
-    float qz = myIMU.getQuatK();
-    float qw = myIMU.getQuatReal();
-    float quatRadianAccuracy = myIMU.getQuatRadianAccuracy();
-
+    qx = myIMU.getQuatI();
+    qy = myIMU.getQuatJ();
+    qz = myIMU.getQuatK();
+    qw = myIMU.getQuatReal();
+//    quatRadianAccuracy = myIMU.getQuatRadianAccuracy();
+/*
     Serial.print(qx, 2);
     Serial.print(F(","));
     Serial.print(qy, 2);
@@ -69,45 +83,47 @@ void loop() {
     Serial.print(qw, 2);
     Serial.print(F(","));
     Serial.print(quatRadianAccuracy, 2);
-    
+*/  
     // convert quaternian to Euler angles
     // roll (x-axis rotation)
-    double sinr_cosp = +2.0 * (qw * qx + qy * qz);
-    double cosr_cosp = +1.0 - 2.0 * (qx * qx + qy * qy);
-    double roll = atan2(sinr_cosp, cosr_cosp);
+    sinr_cosp = +2.0 * (qw * qx + qy * qz);
+    cosr_cosp = +1.0 - 2.0 * (qx * qx + qy * qy);
+    roll = atan2(sinr_cosp, cosr_cosp);
   
     // pitch (y-axis rotation)
-    double sinp = +2.0 * (qw * qy - qz * qx);
-    double pitch;
+    sinp = +2.0 * (qw * qy - qz * qx);
     if (fabs(sinp) >= 1)
       pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
     else
       pitch = asin(sinp);
   
     // yaw (z-axis rotation)
-    double siny_cosp = +2.0 * (qw * qz + qx * qy);
-    double cosy_cosp  = +1.0 - 2.0 * (qy * qy + qz * qz);  
-    double yaw = atan2(siny_cosp, cosy_cosp) * 180/M_PI;
-  
-  
-      Serial.println();
-      delay(400);
+    siny_cosp = +2.0 * (qw * qz + qx * qy);
+    cosy_cosp  = +1.0 - 2.0 * (qy * qy + qz * qz);  
+    yaw = atan2(siny_cosp, cosy_cosp) * 180/M_PI;
+   
+//      Serial.println();
+//      delay(400);
     // compose 'O'rientation msg for Pi
     if ((millis() - epoch) > 1000) {
       // Can Dead Men Vote Twice At Elections
-      int hdg = 360 - yaw;
+      hdg = 360 - yaw;
       hdg = hdg + VARIATION;            // make Mag heading into True
       hdg += ROVER;                         // orientation on rover chassis
       if (hdg < 0)
         hdg += 360;
       if (hdg > 360)
         hdg -= 360;
-      sprintf(str, "{O%d}.", hdg);
-      for (char *p = &str[0]; *p; p++) {
-        ibuffer[ihead++] = *p;
-        ihead &= MASK;
+      if (hdg != oldhdg) {
+        sprintf(str, "{O%d}.", hdg);
+        for (char *p = &str[0]; *p; p++) {
+          ibuffer[ihead++] = *p;
+          ihead &= MASK;
+          Serial.print(p);
+          }
+        oldhdg = hdg;
         }
-  
+      /*
       Serial.print("yaw:");
       Serial.print(hdg);
       Serial.print(" pitch: ");
@@ -115,17 +131,20 @@ void loop() {
       Serial.print(" roll: ");
       Serial.print(roll*180.0/M_PI, 2);
       Serial.println(str);
+      */
       epoch = millis();
       }
     
     // read Xbee input and upload to Pi
     while (Serial1.available()) {
       xchr = Serial1.read();
+      Serial.println(xchr);
       ibuffer[ihead++] = xchr;
       ihead &= MASK;
       if (xchr == '}') {
         ibuffer[ihead++] = 0;
         ihead &= MASK;
+        break;
         }
       }
       
