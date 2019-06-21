@@ -209,20 +209,32 @@ void loop() {
     ibuffer[ihead++] = inpt;
     }
   if (piflag) {
-    if (ibuffer[0] == 'v') {                                 // when message complete
-      Serial.print("from Pi ");
-      Serial.println(ibuffer);
+    Serial.println(ibuffer);
+    str = &ibuffer[1];
+
+    if (ibuffer[0] == 'v') {
       lcd.setCursor(5, 0);
-      str = &ibuffer[1];
-      str = lcdout(str);        // print speed
+      lcdout(str);                        // print speed
       lcd.print("   ");
-      str++;
+      }
+    if (ibuffer[0] == 's') {
       lcd.setCursor(5, 1);
-      str = lcdout(str);        // print steering angle
+      lcdout(str);                        // print steering
       lcd.print("   ");
-      str++;
+      }
+    if (ibuffer[0] == 'h') {
       lcd.setCursor(5, 2);
-      str = lcdout(str);        // print compass heading
+      lcdout(str);                        // print heading
+      lcd.print("   ");
+      }
+    if (ibuffer[0] == 'r') {
+      lcd.setCursor(5, 3);
+      lcdout(str);                        // print roll
+      lcd.print("   ");
+      }
+    if (ibuffer[0] == 'p') {
+      lcd.setCursor(10, 3);
+      lcdout(str);                        // print pitch
       lcd.print("   ");
       }
     piflag = FALSE;
