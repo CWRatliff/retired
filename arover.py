@@ -1,7 +1,6 @@
 #PlayStation interface via Xbee radios
 # using SPI instead of I2C
-#190515
-
+#190621 - added compass following
 import sys
 import time
 import smbus
@@ -23,6 +22,7 @@ hdg = 0
 oldsteer = 500
 oldspeed = 500
 oldhdg = 500
+compass = False
 
 left_limit = -36
 right_limit = 36
@@ -98,14 +98,15 @@ while True:
             if xchr == 'F':                     #Forward 10-20% D pad up
                  if speed <= 90:
                     speed += 10
-                    accel = 1
                     robot.motor(speed, steer)
 
             elif xchr == 'B':                   #B Reverse 10-20% D pad down
                 if speed >= -90:
                     speed -= 10
-                    accel = 1
                     robot.motor(speed, steer)
+
+            elif xchr == 'C':                   #C steer to compass heading
+                compass = True
 
             elif xchr == 'L':                   #Left 2 deg, D pad left
                 if steer > left_limit:
@@ -151,6 +152,7 @@ while True:
     #                    time.sleep(0.05)
                 steer = 0
                 robot.motor(speed, steer)
+                compass = False
 
             elif xchr == 'X':                   #X exit Select button
                 robot.stop_all()
@@ -163,6 +165,20 @@ while True:
                 print("heading = " + str(hdg))
 
                 print("Motor speed, steer "+str(speed)+", "+str(steer))
+
+            if (compass);
+                if (oldhdg < 180 and hdg > 180):    #seems crude but cheap vs vectors
+                    steer = -2
+                elif (oldhdg > 180 and hdg < 180):
+                    steer = 2
+                elif (oldhdg > hdg):
+                    steer = hdg - oldhdg
+                elif (oldhdg < hdg):
+                    steer = oldhdg - hdg
+                    
+                if (steer != 0):
+                    robot.motor(speed, steer)
+                    
             if (hdg != oldhdg):
                 cstr = "{h"+str(hdg)+"}"
                 spisend(cstr)
@@ -174,7 +190,7 @@ while True:
                 oldspeed = speed
                 print(cstr)
             if (steer != oldsteer):
-                cstr + "{s"+str(hdg)+"}'"
+                cstr = "{s"+str(steer)+"}'"
                 spisend(cstr)
                 oldsteer = steer
                 print(cstr)
