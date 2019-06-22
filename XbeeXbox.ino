@@ -1,4 +1,4 @@
-//190427
+//190621 - added compass command
 // joystick algorithm adapted from Calvin Hass http://www.impulseadventure.com/elec/
 
 #include <PS2X_lib.h>
@@ -24,6 +24,7 @@ Adafruit_LiquidCrystal lcd(0);
 #define ACK         '*'     // Ping
 #define ANGLE       'A'     // tool boom angle
 #define BACK        'B'     // reverse drive motion
+#define COMPASS     'C'     // steer to current compass hdg
 #define DIRECTION   'D'     // tool base
 #define FWD         'F'     // forward drive motion
 #define GEE         'G'     // hard right turn
@@ -32,12 +33,13 @@ Adafruit_LiquidCrystal lcd(0);
 #define LEFT        'L'     // left drive motion
 #define MULTI       'M'     // multi side drive motion
 #define NAK         '_'     // Negative acknowledgement
+#define ORIENT      'O'     // Orientation of rover to world
 #define PAN         'P'     // camera pan
 #define RIGHT       'R'     // right drive motion
 #define STOP        'S'     // stop drive motors
 #define TILT        'T'     // camera tilt
 #define SWEEP       'W'     // sweep sensor pack
-#define EXIT    'X'   // exit rover program
+#define EXIT        'X'     // exit rover program
 #define ZERO        'Z'     // zero steering angle
 
 #define JOYDELAY    5000
@@ -294,6 +296,9 @@ void loop() {
       }
     if (ps2x.ButtonReleased(PSB_PAD_DOWN))
       flgdown = TRUE;
+
+    if (ps2x.Button(PSB_TRIANGLE))
+      xmit(COMPASS);
       
     if(ps2x.Button(PSB_L3))              // left joystick button
       xmit(STOP);
