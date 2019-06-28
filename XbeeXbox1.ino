@@ -164,7 +164,7 @@ void setup(){
 
   lcd.begin(20, 4);
   lcd.clear();
-  Serial1.begin(9600);
+  Serial1.begin(9600);        // Xbee on hardware port
   
   delay(300);  //added delay to give wireless ps2 module some time to startup, before configuring it
 
@@ -173,41 +173,24 @@ void setup(){
   
   if(error == 0){
     Serial.println("Found Controller, configured successful ");
-  }  
-  else if(error == 1)
-    Serial.println("No controller found, check wiring");
-   
-  else if(error == 2)
-    Serial.println("Controller found but not accepting commands");
-
-  else if(error == 3)
-    Serial.println("Controller refusing to enter Pressures mode, may not support it. ");
-  
-//  Serial.print(ps2x.Analog(1), HEX);
-  
+    }  
   type = ps2x.readType(); 
-  switch(type) {
-    case 0:
+  if (type == 1) {
       Serial.print("Unknown Controller type found ");
-      break;
-    case 1:
       Serial.print("DualShock Controller found ");
-      lcd.setCursor(0, 0);
-      lcd.print("Spd: ");
-      lcd.setCursor(0, 1);
-      lcd.print("Str: ");
+      }
+    lcd.setCursor(0, 0);
+    lcd.print("Spd: ");
+    lcd.setCursor(0, 1);
+    lcd.print("Str: ");
     lcd.setCursor(0, 2);
     lcd.print("Hdg: ");
-      break;
-    case 2:
-      Serial.print("GuitarHero Controller found ");
-      break;
-  case 3:
-      Serial.print("Wireless Sony DualShock Controller found ");
-      break;
+  if (error != 0 && type !=1) {
+    lcd.setCursor(0, 0);
+    lcd.print("PS/2 controller MIA ");
+    while TRUE;                             // infinite loop
     }
-   if (error != 0 && type !=1)
-    while TRUE;
+    
    joytime = millis() + JOYDELAY;
    xzero = 128;
    yzero = 128;
@@ -223,8 +206,10 @@ void loop() {
   char* str;
   int   spd;
   int   ang;
-  
-   while (Serial1.available()) {               // Xbee input from motor control RPi
+
+
+   //-----------------------------------------Xbee input from bot
+   while (Serial1.available()) {
     inpt = Serial1.read();
     if (inpt == '{') {
       ihead = 0;
@@ -269,6 +254,7 @@ void loop() {
     piflag = FALSE;
     }
 
+  //----------------------------------------------PS/2 key inputs
   ps2x.read_gamepad(false, vibrate); //read controller and set large motor to spin at 'vibrate' speed
     
   if (ps2x.Button(PSB_SELECT))    // bail out of rover program
@@ -325,12 +311,13 @@ void loop() {
     if(ps2x.Button(PSB_L1))              // left upper trigger button
       xmit(ZERO);
 
+    //-----------------------------------------------keypad inputs
     char customkey = keypad.getKey();
     if (customkey) {
       if (customkey == '*')
         exeflag = TRUE;
       else {
-        if (isDigit(customkey)) {
+        if (exeflag && isDigit(customkey)) {
           xmitnum('E', customkey);
           exeflag = FALSE;
           }
