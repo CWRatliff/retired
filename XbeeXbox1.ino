@@ -11,26 +11,18 @@ char keys[ROWS][COLS] = {
   {'7','8','9','C'},
   {'*','0','#','D'}
 };
-byte rowPins[ROWS] = {41, 39, 37, 35}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {40, 38, 36, 34}; //connect to the column pinouts of the keypad
+byte rowPins[ROWS] = {51, 49, 47, 45}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {50, 48, 46, 44}; //connect to the column pinouts of the keypad
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
-  
-void loop(){
-  char key = keypad.getKey();
-  
-  if (key){
-    Serial.println(key);
-  }
-}
 #include <PS2X_lib.h>
 #include "Wire.h"
 #include "Adafruit_LiquidCrystal.h"
 //#include <LiquidCrystal.h>
 
 #define FALSE       0
-#define TRUE        !FALSE
+#define TRUE        (!FALSE)
 #define BUFF        256
 
 #define PS2_DAT        11
@@ -49,6 +41,7 @@ Adafruit_LiquidCrystal lcd(0);
 #define BACK        'B'     // reverse drive motion
 #define COMPASS     'C'     // steer to current compass hdg
 #define DIRECTION   'D'     // tool base
+#define EXECUTE     'E'     // execute autopilot maneover
 #define FWD         'F'     // forward drive motion
 #define GEE         'G'     // hard right turn
 #define HAW         'H'     // hard left turn
@@ -101,6 +94,7 @@ int   flgup = TRUE;               // key debounce
 int   flgdown = TRUE;
 int   flgleft = TRUE;
 int   flgright = TRUE;
+int   exeflag = FALSE;
 
 char  ibuffer[BUFF];              // Xbee software input buffer
 int   itail = 0;
@@ -148,10 +142,18 @@ void xmit(char code) {
   epoch = millis();
   } 
 //===================================================================  
-void xmit1(char code, int amt) {
+void xmithex(char code, int amt) {
   Serial1.print("{");
   Serial1.print(code);
   Serial1.print(lowByte(amt), HEX);
+  Serial1.print("}");
+  epoch = millis();
+  } 
+//===================================================================  
+void xmitnum(char code, char num) {
+  Serial1.print("{");
+  Serial1.print(code);
+  Serial1.print(num);
   Serial1.print("}");
   epoch = millis();
   } 
@@ -203,7 +205,9 @@ void setup(){
   case 3:
       Serial.print("Wireless Sony DualShock Controller found ");
       break;
-   }
+    }
+   if (error != 0 && type !=1)
+    while TRUE;
    joytime = millis() + JOYDELAY;
    xzero = 128;
    yzero = 128;
@@ -265,15 +269,7 @@ void loop() {
     piflag = FALSE;
     }
 
-  if(error == 1) //skip loop if no controller found
-    return; 
-  
-  if(type == 2){ //Guitar Hero Controller
-    return;
-    } 
- 
-  else { //DualShock Controller
-    ps2x.read_gamepad(false, vibrate); //read controller and set large motor to spin at 'vibrate' speed
+  ps2x.read_gamepad(false, vibrate); //read controller and set large motor to spin at 'vibrate' speed
     
   if (ps2x.Button(PSB_SELECT))    // bail out of rover program
     xmit(EXIT);
@@ -329,10 +325,21 @@ void loop() {
     if(ps2x.Button(PSB_L1))              // left upper trigger button
       xmit(ZERO);
 
+    char customkey = keypad.getKey();
+    if (customkey) {
+      if (customkey == '*')
+        exeflag = TRUE;
+      else {
+        if (isDigit(customkey)) {
+          xmitnum('E', customkey);
+          exeflag = FALSE;
+          }
+        }
+      }
+
 //    if ((millis() - epoch) > 1000) {}
 //      xmit('*');                          // were still alive
     epoch = millis();
-    }
       
   delay(50);  
   }
