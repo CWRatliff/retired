@@ -22,7 +22,7 @@ hdg = 0
 oldsteer = 500
 oldspeed = 500
 oldhdg = 500
-compass = False
+auto = False
 comhdg = 0
 
 left_limit = -36
@@ -73,7 +73,7 @@ try:
             c = spi.xfer(NUL)
             if (c[0] == 0 or c[0] == 255):
                 break
-            print(c)
+#            print(c)
             d = chr(c[0])
             if (d == '{'):
                 cbuff = "{"
@@ -98,26 +98,26 @@ try:
                 if xchr == 'Q':			#Quit (unassigned)
                     sys.exit()
                     
-                if xchr == 'F':                     #Forward 10-20% D pad up
+                if xchr == 'F':                     #Forward
                      if speed <= 90:
                         speed += 10
                         robot.motor(speed, steer)
 
-                elif xchr == 'B':                   #B Reverse 10-20% D pad down
+                elif xchr == 'B':                   #B Reverse
                     if speed >= -90:
                         speed -= 10
                         robot.motor(speed, steer)
 
                 elif xchr == 'C':                   #C steer to compass heading
-                    compass = True
+                    auto = True
                     comhdg = hdg
 
-                elif xchr == 'L':                   #Left 2 deg, D pad left
+                elif xchr == 'L':                   #Left, D pad left
                     if steer > left_limit:
                         steer -= turn()
                         robot.motor(speed, steer)
 
-                elif xchr == 'R':                   #Right 2 deg, D pad right
+                elif xchr == 'R':                   #Right, D pad right
                     if steer < right_limit:
                         steer += turn()
                         robot.motor(speed, steer)
@@ -150,13 +150,13 @@ try:
                     dt = 1
                     if steer > 0:
                         dt = -1
-                        while abs(steer) > 1:
-                            steer += dt
-                            robot.motor(speed, steer)
-        #                    time.sleep(0.05)
+                    while abs(steer) > 1:
+                        steer += dt
+                        robot.motor(speed, steer)
+    #                    time.sleep(0.05)
                     steer = 0
                     robot.motor(speed, steer)
-                    compass = False
+                    auto = False
                     comhdg = 0
 
                 elif xchr == 'X':                   #X exit Select button
@@ -171,7 +171,13 @@ try:
 
                     print("Motor speed, steer "+str(speed)+", "+str(steer))
 
-                if (compass):
+                elif xchr == 'E':
+                    xchr = cbuff[2]
+                    if (xchr == '0'):
+                        auto = True
+                        comhdg = hdg
+
+                if (auto):
                     if (comhdg < 180 and hdg > 180):    #seems crude but cheap vs vectors
                         steer = 2
                     elif (comhdg > 180 and hdg < 180):
@@ -195,7 +201,7 @@ try:
                     oldspeed = speed
                     print(cstr)
                 if (steer != oldsteer):
-                    cstr = "{s"+str(steer)+"}'"
+                    cstr = "{s"+str(steer)+"}"
                     spisend(cstr)
                     oldsteer = steer
                     print(cstr)
