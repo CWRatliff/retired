@@ -6,7 +6,7 @@
 #include <Keypad.h>
 
 const byte ROWS = 4; //four rows
-const byte COLS = 4; //three columns
+const byte COLS = 4; //four columns
 char keys[ROWS][COLS] = {
   {'1','2','3','A'},
   {'4','5','6','B'},
@@ -16,7 +16,7 @@ char keys[ROWS][COLS] = {
 byte rowPins[ROWS] = {49, 47, 45, 43}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {48, 46, 44, 42}; //connect to the column pinouts of the keypad
 
-Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 #include "Wire.h"
 #include "Adafruit_LiquidCrystal.h"
@@ -28,7 +28,7 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 Adafruit_LiquidCrystal lcd(0);
 
-//  Xbee  Mega
+//  Xbee  Mega                  // hardware UART on Mega Arduino
 //  2     19 rx1
 //  3     18 tx1
 
@@ -36,8 +36,6 @@ Adafruit_LiquidCrystal lcd(0);
 #define EXECUTE     'E'     // execute autopilot maneover
 #define FUNCTION    'F'     // multi digit input
 
-int   error = 0;
-int   speed;
 char  inpt;
 
 int   exeflag = FALSE;
@@ -46,15 +44,10 @@ int   lbflag = FALSE;
 char  ibuffer[BUFF];              // Xbee software input buffer
 int   itail = 0;
 int   ihead = 0;
-int   piflag = FALSE;
+int   piflag = FALSE;             // input from Raspberry Pi
 
 int   epoch;                      // last xmission time
-//================================================================
-// 1-byte int to two hex bytes
-void btoh(int binp, int &hob, int &lob) {
-  hob = binp / 16;
-  lob = binp - hob * 16;
-  }
+
 //===============================================================
 // print text numbers to lcd
 char* lcdout(char *s) {
@@ -65,34 +58,10 @@ char* lcdout(char *s) {
     }
   return (s);
   }
-//===============================================================
-// cvt hex digits to uint
-int shtoi(char* st) {
-  char  c;
-  int   hval = 0;
-
-  for (c = *st; isHexadecimalDigit(c); c = *++st) {
-    if (c >= 'a')
-      c -= ('a' - 'A');
-    c = c - '0';
-    if (c > 9)
-      c -= 7;
-    hval = hval * 16 + c;
-    }
-  return (hval);
-  }
 //===================================================================  
 void xmit(char code) {
   Serial1.print("{");
   Serial1.print(code);
-  Serial1.print("}");
-  epoch = millis();
-  } 
-//===================================================================  
-void xmithex(char code, int amt) {
-  Serial1.print("{");
-  Serial1.print(code);
-  Serial1.print(lowByte(amt), HEX);
   Serial1.print("}");
   epoch = millis();
   } 
