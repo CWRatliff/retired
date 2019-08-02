@@ -20,13 +20,6 @@ int oldhdg = 0;
 
 #define MASK 0xff
 
-/* Set the delay between fresh samples */
-//#define VARIATION 12.1387                               // for Camarillo, CA
-//#define ROVER     0                             // orientation of sensor to robot
-//#define CALIB     -137
-//#define CALIB     -150                          // based on test 190712
-
-
 void setup() {
   Serial.begin(115200);
   Serial1.begin(9600);
