@@ -115,11 +115,7 @@ void loop() {
 //      delay(400);
     // compose 'O'rientation msg for Pi
     if ((millis() - epoch) > 1000) {
-      // Can Dead Men Vote Twice At Elections
       hdg = 450 - yaw;                  // cvt math CCW x-axis to azimuth
-//      hdg = hdg + VARIATION;            // make Mag heading into True
-//      hdg = hdg + CALIB;
-//      hdg += ROVER;                     // orientation on rover chassis
       hdg = hdg % 360;
 
       if (hdg != oldhdg) {
@@ -127,7 +123,6 @@ void loop() {
         for (char *p = &str[0]; *p; p++) {
           ibuffer[ihead++] = *p;
           ihead &= MASK;
-//          Serial.print(p);
           }
         oldhdg = hdg;
         }
@@ -150,28 +145,18 @@ void loop() {
     double lonmin = modf(londeg, &trash);
     double lonsec = modf(lonmin * 60, &trash);
     lonsec = fabs(lonsec);
-    double latdeg = (double)latitude / 10000000.0;
-    double latmin = modf(latdeg, &trash);
-    double latsec = modf(latmin * 60, &trash);
-    double londeg = (double)longitude / 10000000.0;
-    double lonmin = modf(londeg, &trash);
-    double lonsec = modf(lonmin * 60, &trash);
-    lonsec = fabs(lonsec);
-/*
-      if (cin == '}') { 
-        if (ibuffer[1] == 'L') {
-          if (ibuffer[2] == 'a')
-            latdel = strtod(&ibuffer[3], &cend);
-          else
-            londel = strtod(&ibuffer[3], &cend);
-          }
-        }
-      }
+    latsec = fabs(latsec);
 
-    double latcorr = latsec - latdel;
-    double loncorr = lonsec - londel;
-*/
-      }
+    sprintf(str, "{LA%f7.4}.", latsec);
+    for (char *p = &str[0]; *p; p++) {
+       ibuffer[ihead++] = *p;
+       ihead &= MASK;
+       }
+    sprintf(str, "{LO%f7.4}.", lonsec);
+    for (char *p = &str[0]; *p; p++) {
+       ibuffer[ihead++] = *p;
+       ihead &= MASK;
+       }
     
     // read Xbee input and upload to Pi
     while (Serial1.available()) {
