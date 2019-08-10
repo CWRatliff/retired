@@ -1,16 +1,20 @@
-#define SPARK
-//#define ADA
+//#define SPARK
+#define ADA
 #define LCD
-#define DELAY 2000
+#define DELAY 1000
 
 #include <math.h>
 #include <Wire.h> //Needed for I2C to GPS
+
+#ifdef LCD
 #include "Adafruit_LiquidCrystal.h"
+Adafruit_LiquidCrystal lcd(0);
+#endif
 
 #ifdef SPARK
 #include "SparkFun_Ublox_Arduino_Library.h" //http://librarymanager/All#SparkFun_Ublox_GPS
 SFE_UBLOX_GPS myGPS;
-Adafruit_LiquidCrystal lcd(0);
+
 #endif
 
 #ifdef ADA
@@ -24,20 +28,21 @@ Adafruit_GPS GPS(&GPSSerial);
      
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
-#define GPSECHO false
+#define GPSECHO true
+uint32_t timer = millis();
 #endif
 
 long lastTime = 0; //Simple local timer. Limits amount if I2C traffic to Ublox module.
 // from multiday avg 190610
 double lathome = 20.2477;
 double longhome = 6.4108;
-
+double latsec;
+double  lonsec;
+double  ilatlon;
 //===================================================================
 void setup()
 {
   Serial.begin(115200);
-//  while (!Serial); //Wait for user to open terminal
-  Serial.println("SparkFun Ublox Example");
 
   Wire.begin();
   Serial1.begin(9600);
@@ -87,12 +92,12 @@ void loop()
   double trash;
   char    buff[30];
   
+
+#ifdef SPARK
   //Query module only every second. Doing it more often will just cause I2C traffic.
   //The module only responds when a new position is available
   if (millis() - lastTime > DELAY) {
     lastTime = millis(); //Update the timer
-
-#ifdef SPARK
     long latitude = myGPS.getLatitude();
     Serial.write("Lat: ");
     Serial.print(latitude);
@@ -134,22 +139,34 @@ void loop()
     double lonsec = modf(lonmin * 60, &trash);
     lonsec *= 60;
     lonsec = fabs(lonsec);
-#endif
+#endif    
 #ifdef ADA
-  // read data from the GPS in the 'main loop'
   char c = GPS.read();
-  // if you want to debug, this is a good time to do it!
-//  if (GPSECHO)
-//    if (c) Serial.print(c);
-  // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
-    // a tricky thing here is if we print the NMEA sentence, or data
-    // we end up not listening and catching other sentences!
-    // so be very wary if using OUTPUT_ALLDATA and trytng to print out data
-//    Serial.println(GPS.lastNMEA()); // this also sets the newNMEAreceived() flag to false
-    if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
-      return; // we can fail to parse a sentence in which case we should just wait for another
-#endif
+    if (!GPS.parse(GPS.lastNMEA()))
+      return;
+    }
+  // if millis() or timer wraps around, we'll just reset it
+  if (timer > millis()) timer = millis();
+     
+  // approximately every 2 seconds or so, print out the current stats
+  if (millis() - timer > 2000) {
+    timer = millis(); // reset the timer
+    if (GPS.fix) {
+
+      latsec = modf(GPS.latitude, &ilatlon);
+      Serial.print(latsec*60, 4);
+      lonsec = modf(GPS.longitude, &ilatlon);
+      Serial.print(" ");
+      Serial.println(lonsec*60, 4);
+
+      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
+      Serial.print("Angle: "); Serial.println(GPS.angle);
+      }
+     }
+  }
+  #endif
+  #ifdef SPARK
     float latdel = lathome - latsec;
     float londel = lonsec - longhome;       // long increases westward
 
@@ -193,21 +210,3 @@ void loop()
     lcd.print(chdr);
   }
 #endif
-
-#ifdef ADA
-    if (GPS.fix) {
-      Serial.print("Location: ");
-      Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-      latmin = modf(GPS.latitude, &ilatlon);
-      lonmin = modf(GPS.longitude, &ilatlon);
-      
-      }
-//      Serial.print(", ");
-      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
-      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
-      Serial.print("Angle: "); Serial.println(GPS.angle);
-//      Serial.print("Altitude: "); Serial.println(GPS.altitude);
-//      Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
-    }
-#endif
-}
