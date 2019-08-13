@@ -8,18 +8,20 @@ SFE_UBLOX_GPS myGPS;
 BNO080 myIMU;
 
 unsigned long epoch;
-char ibuffer[256];
-char obuffer[256];
-char str[10];
+char ibuffer[256];              // traffic from controller to Pi
 volatile int itail = 0;
 volatile int ihead = 0;
+
+char obuffer[256];              // traffic from Pi to controller
 volatile int otail = 0;
 volatile int ohead = 0;
+char str[10];
 volatile int prox;
 int oldhdg = 0;
 
 #define MASK 0xff
 
+//==========================================================================================
 void setup() {
   Serial.begin(115200);
   Serial1.begin(9600);
@@ -66,6 +68,7 @@ void loop() {
     double siny_cosp;
     double cosy_cosp;  
     double yaw;
+    double trash;
     int hdg;
     
   if (myIMU.dataAvailable() == true) {
@@ -119,6 +122,7 @@ void loop() {
           }
         oldhdg = hdg;
         }
+      }
 /*
       Serial.print("yaw:");
       Serial.print(yaw);
