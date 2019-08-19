@@ -4,8 +4,41 @@
 #190715 - strengthened xbee input validation
 #190720 - improved compass following
 #190802 - U turns
+#190816 - GPS, waypoints
+
+'''
++---------+----------+----------+
+| L 1deg  | Fwd      | R 1deg   |
+|         |          |          |
++---------+----------+----------+
+| L 5deg  | 0 steer  | R 5deg   |
+|         |          |          |
++---------+----------+----------+
+| L 35deg | Rev      | R 35deg  |
+|         |          |          |
++---------+----------+----------+
+|         | Stop     |          |
+|         |          |          |
++---------+----------+----------+
+
++---------+----------+----------+
+| L 90deg | Auto     | R 90deg  |
+|         |          |          |
++---------+----------+----------+
+|         |          |          |
+|         |          |          |
++---------+----------+----------+
+| L 180   |          | R 180    |
+|         |          |          |
++---------+----------+----------+
+|  *      | Stby     |          |
+|         |          |          |
++---------+----------+----------+
+
+'''
 import sys
 import time
+import math
 import smbus
 import spidev
 import motor_driver
@@ -26,10 +59,18 @@ oldsteer = 500
 oldspeed = 500
 oldhdg = 500
 auto = False
+waypoint = False
 azimuth = 0
 compass_adjustment = 230
 latsec = 0.0
 lonsec = 0.0
+startlat = 0.0
+startlon = 0.0
+clatsec = 0.0
+clonsec = 0.0
+latitude = math.radians(34.24)
+ftpersec = 6076.0/60
+aftpersec = ftpersec * math.cos(latitude)
 
 left = False
 left_limit = -36
@@ -39,9 +80,45 @@ wstr = ""
 cbuff = ""
 flag = False
 
+waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
+[22.678, 9.399],            #10 open area near main gate
+[20.808, 7.73],             #11 mid speed bump
+[20.641, 7.396],            #12 center parking 'T' seam
+[11,12]]
+
 robot = motor_driver.motor_driver()
 
-print("Rover 1.0 190802")
+print("Rover 1.0 190816")
+
+#===================================================================
+#compute distance from a point to a line
+def pointline(la1, lo1, la2, lo2, lap0, lop0):
+    aa1 = la1 * ftpersec 
+    ao1 = lo1 * aftpersec
+    aa2 = la2 * ftpersec
+    ao2 = lo2 * aftpersec
+    aap0 = lap0 * ftpersec
+    aop0 = lop0 * aftpersec
+    dely = aa2 - aa1
+    delx = ao2 - ao1
+    linedist = math.sqrt(delx**2 + dely**2)
+    dist = abs(dely*aop0 - delx*aap0 + ao2*aa1 - aa2*ao1) / linedist
+    return (dist)
+#===================================================================
+#compute distance from lat/lon point to point on flat earth
+def distto(la0, lo0, la1, lo1):
+    dely = (la1 - la0) * ftpersec
+    delx = (lo0 - lo1) * math.cos(latitude) * ftpersec
+    dist = math.sqrt(delx**2 + dely**2)
+    return(dist)
+#===================================================================
+#compute angle from lat/lon point to point on flat earth
+def fromto(la0, lo0, la1, lo1):
+    delx = la1 - la0            #lat is +y
+    dely = lo0 - lo1            #long is -x direction
+    ang = math.atan2(delx, dely * math.cos(latitude))
+    return((450 - math.degrees(ang))%360)
+
 #===================================================================
 # progressive steering
 def turn():
@@ -75,6 +152,7 @@ def spisend(cmd):
 #    if (chr == 0):
 #        break
 #=================================================================
+
 try:
     while True:
 
@@ -96,6 +174,7 @@ try:
                 break
             #endwhile
 
+#========================================================================
         if (flag):                          # flag means we got a command
             msglen = len(cbuff)
             if (msglen < 3 or cbuff[0] != '{'):
@@ -104,12 +183,29 @@ try:
             xchr = cbuff[1]    
             if (xchr == '*'):                   #ping
     #           print("ping")
-               epoch = time.time()
+                epoch = time.time()
     #        print(xchr)
                
             if (xchr >= 'A') and (xchr <= 'Z'):
 
-                if (xchr == 'D'):                
+                 if (xchr == 'C'):               #lat/long corrections
+                    xchr = cbuff[2]
+                    try:
+                        x = float(cbuff[3:msglen-1])
+                        if (xchr == 'A'):
+                            latcor = x
+                        elif xchr == 'O':
+                            loncor = x
+                        print ("L/L corr:"+str(latcor) + "/"+ str(loncor))
+                        clatsec = latsec + latcor
+                        clonsec = lonsec + loncor
+
+                    except ValueError:
+                        print("bad data" + cbuff)
+
+#======================================================================
+# single digit keypad commands
+                 if (xchr == 'D'):                            
                     xchr = cbuff[2]
 
                     if xchr == '0':                     # 0 - stop
@@ -182,12 +278,12 @@ try:
 #===================end of D commands
 
  
-                elif xchr == 'X':                   #X exit Select button
+                 elif xchr == 'X':                   #X exit Select button
                     robot.stop_all()
                     speed = 0
                     exit()
                     
-                elif xchr == 'O':                   #O - orientation esp hdg from arduino
+                 elif xchr == 'O':                   #O - orientation esp hdg from arduino
                     if (msglen < 4 or msglen > 6):
                         cbuff = ""
                         continue
@@ -197,15 +293,17 @@ try:
 
                     print("Motor speed, steer "+str(speed)+", "+str(steer))
 
-                elif xchr == 'E':
+#======================================================================
+# Keypad commands preceded by a star
+                 elif xchr == 'E':
                     xchr = cbuff[2]
-                    if (xchr == '0'):
+                    if (xchr == '0'):               #standby
                         auto = False
                         azimuth = hdg
                     if (auto and xchr == '1'):      #left 90 deg
                         azimuth -= 90
                         azimuth %= 360
-                    if (xchr == '2'):
+                    if (xchr == '2'):               #autopilot on
                         auto = True
                         azimuth = hdg
                     if (auto and xchr == '3'):      #right 90 deg
@@ -220,7 +318,23 @@ try:
                         azimuth += 180
                         azimuth %= 360
 
-                elif xchr == 'L':
+#======================================================================
+#Keypad commands preceeded by a #
+                 elif xchr == 'F':                   #goto waypoint
+                    wpt = int(cbuff[2:4])
+                    if wpt == 0:
+                        waypoint = False
+                    elif (wpt == 10):
+                        startlat = latsec
+                        startlon = lonsec
+                        destlat = waypts[10][0]
+                        destlon = waypts[10][1]
+                        comhdg = fromto(destlon, destlat, startlon, startlat)
+                        auto = True
+                        waypoint = True
+
+#======================================================================
+                 elif xchr == 'L':                   #lat/long input
                     xchr = cbuff[2]
                     try:
                         x = float(cbuff[3:msglen-1])
@@ -229,10 +343,15 @@ try:
                         elif xchr == 'O':
                             lonsec = x
                         print ("Lat/long:"+str(latsec) + "/"+ str(lonsec))
-                    finally:
-                        print("bad data")
+                        if waypoint:
+                            nowhdg = fromto(destlon, destlat, latsec, lonsec)
+                            comhdg = nowhdg
 
-                if (auto):                          #adjust for > 180 turning
+                    except ValueError:
+                        print("bad data" + cbuff)
+
+ #======================================================================
+                 if (auto):                          #adjust for > 180 turning
                     steer = azimuth - hdg
                     if (steer < -180):
                         steer = steer + 360
@@ -246,24 +365,24 @@ try:
                           
                     robot.motor(speed, steer)
                         
-                if (hdg != oldhdg):
+                 if (hdg != oldhdg):
                     cstr = "{h"+str(hdg)+"}"
                     spisend(cstr)
                     oldhdg = hdg
                     print(cstr)
-                if (speed != oldspeed):
+                 if (speed != oldspeed):
                     cstr = "{v"+str(speed)+"}"
                     spisend(cstr)
                     oldspeed = speed
                     print(cstr)
-                if (steer != oldsteer):
+                 if (steer != oldsteer):
                     cstr = "{s"+str(steer)+"}"
                     spisend(cstr)
                     oldsteer = steer
                     print(cstr)
 
-                epoch = time.time()
-                #end if =======================
+                 epoch = time.time()
+                 #end if =======================
 
             if (time.time() > (epoch + 1.1)):
         #        print(time.time(),5)
