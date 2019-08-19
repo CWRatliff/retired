@@ -15,7 +15,7 @@ volatile int ihead = 0;
 char obuffer[256];              // traffic from Pi to controller
 volatile int otail = 0;
 volatile int ohead = 0;
-char str[10];
+char str[15];
 volatile int prox;
 int oldhdg = 0;
 
@@ -120,6 +120,7 @@ void loop() {
           ibuffer[ihead++] = *p;
           ihead &= MASK;
           }
+        Serial.println(str);
         oldhdg = hdg;
         }
       }
@@ -134,22 +135,32 @@ void loop() {
 */
       epoch = millis();
     long latitude = myGPS.getLatitude();
+//    Serial.println(latitude);
     long longitude = myGPS.getLongitude();
     double latdeg = (double)latitude / 10000000.0;
+//    Serial.println(latdeg);
     double latmin = modf(latdeg, &trash);
     double latsec = modf(latmin * 60, &trash);
+    latsec *= 60;
+//    Serial.println(latsec);
     double londeg = (double)longitude / 10000000.0;
     double lonmin = modf(londeg, &trash);
     double lonsec = modf(lonmin * 60, &trash);
+    lonsec *= 60;
     lonsec = fabs(lonsec);
     latsec = fabs(latsec);
-
-    sprintf(str, "{LA%f7.4}.", latsec);
+    char latstr[10];
+    char lonstr[10];
+    dtostrf(latsec, 7, 4, latstr);
+    sprintf(str, "{LA%s}.", latstr);
+    Serial.println(str);
     for (char *p = &str[0]; *p; p++) {
        ibuffer[ihead++] = *p;
        ihead &= MASK;
        }
-    sprintf(str, "{LO%f7.4}.", lonsec);
+    dtostrf(lonsec, 6, 4, lonstr);
+    sprintf(str, "{LO%s}.", lonstr);
+    Serial.println(str);
     for (char *p = &str[0]; *p; p++) {
        ibuffer[ihead++] = *p;
        ihead &= MASK;

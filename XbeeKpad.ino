@@ -88,6 +88,8 @@ void setup(){
     lcd.print("Str: ");
     lcd.setCursor(0, 2);
     lcd.print("Hdg: ");
+    lcd.setCursor(0, 3);
+    lcd.print("L/L: ");
 
 //   xmit('*');             // ping, were alive
 }
@@ -136,6 +138,7 @@ void loop() {
       lcdout(str);                        // print heading
       lcd.print("   ");
       }
+    /*
     if (ibuffer[0] == 'r') {
       lcd.setCursor(5, 3);
       lcdout(str);                        // print roll
@@ -146,6 +149,23 @@ void loop() {
       lcdout(str);                        // print pitch
       lcd.print("   ");
       }
+      */
+    if (ibuffer[0] == 'a') {              // auto/stby status
+      lcd.setCursor(16, 0);
+      lcdout(str);
+      }
+    if (ibuffer[0] == 'l') {
+      str = &ibuffer[2];
+      if (ibuffer[1] == 'a') {
+        lcd.setCursor(5, 3);
+        lcdout(str);
+        }
+      if (ibuffer[1] == 'o') {
+        lcd.setCursor(12, 3);
+        lcdout(str);
+        }
+      }
+
     piflag = FALSE;
     }
 
@@ -153,7 +173,6 @@ void loop() {
     char kpad = keypad.getKey();
     if (kpad) {
       Serial.print(kpad);
-
 
       if (kpad == '*') {
         exeflag = TRUE;
@@ -163,19 +182,21 @@ void loop() {
       else if (kpad == '#') {
         lbflag = TRUE;
         exeflag = FALSE;
+        Serial.print("hatch found");
         }
         
-      else if (exeflag && kpad >= '0' && kpad <= '9') {
+      if (exeflag && kpad >= '0' && kpad <= '9') {
         xmitnum(EXECUTE, kpad);
         exeflag = FALSE;
         }
         
-      else if (lbflag && kpad >= '0' && kpad <= '9')
+      else if (lbflag && kpad >= '0' && kpad <= '9') {
         xmitnum(FUNCTION, kpad);
         lbflag = FALSE;
         }
 
       else if (kpad >= '0' && kpad <= '9') {
+        Serial.print("bare key");
         xmitnum(DIRECTION, kpad);
         }
 
@@ -184,4 +205,5 @@ void loop() {
 //    epoch = millis();
       
   delay(50);  
+    }
   }

@@ -14,8 +14,12 @@ SFE_UBLOX_GPS myGPS;
 
 long lastTime = 0; //Simple local timer. Limits amount if I2C traffic to Ublox module.
 // from multiday avg 190610
-double lathome = 20.2477;
-double longhome = 6.4108;
+//double lathome = 20.2477;
+//double longhome = 6.4108;
+// from WM Survey 190809
+double lathome = 20.784;
+double longhome = 7.8847;
+
 double latsec;
 double  lonsec;
 double  ilatlon;
@@ -97,7 +101,7 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print(latstr);
     dtostrf(latdel, 7, 4, latstr);
-    sprintf(buff, "{Ca%s}", latstr) ;
+    sprintf(buff, "{CA%s}", latstr) ;
     Serial.write(buff);
     Serial1.write(buff);
     lcd.setCursor(0, 1);
@@ -107,7 +111,7 @@ void loop() {
     lcd.setCursor(0,2);
     lcd.print(lonstr);
     dtostrf(londel, 6, 4, lonstr);
-    sprintf(buff, "{Co%s}", lonstr) ;
+    sprintf(buff, "{CO%s}", lonstr) ;
     Serial.write(buff);
     Serial1.write(buff);
     lcd.setCursor(0, 3);
