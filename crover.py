@@ -285,12 +285,16 @@ try:
                     if (xchr == '0'):               #standby
                         auto = False
                         azimuth = hdg
+                        cstr = "{aStby}"
+                        spisend(cstr)
                     if (auto and xchr == '1'):      #left 90 deg
                         azimuth -= 90
                         azimuth %= 360
                     if (xchr == '2'):               #autopilot on
                         auto = True
                         azimuth = hdg
+                        cstr = "{aAuto}"
+                        spisend(cstr)
                     if (auto and xchr == '3'):      #right 90 deg
                         azimuth += 90
                         azimuth %= 360
@@ -309,6 +313,8 @@ try:
                     wpt = int(cbuff[2:4])
                     if wpt == 0:
                         waypoint = False
+                        cstr = "{aAuto}"
+                        spisend(cstr)
                     elif (wpt == 10):
                         startlat = latsec
                         startlon = lonsec
@@ -317,6 +323,8 @@ try:
                         comhdg = fromto(destlon, destlat, startlon, startlat)
                         auto = True
                         waypoint = True
+                        cstr = "{aWpt }"
+                        spisend(cstr)
 
 #======================================================================
                  elif xchr == 'L':                   #lat/long input
@@ -324,11 +332,11 @@ try:
                     try:
                         x = float(cbuff[3:msglen-1])
                         if (xchr == 'A'):
+                            clatsec = latsec + latcor
                             latsec = x
                         elif xchr == 'O':
                             lonsec = x
-                        clatsec = latsec + latcor
-                        clonsec = lonsec + loncor
+                            clonsec = lonsec + loncor
                         wstr = "Lat/long:%5.3f/%5.3f" % (clatsec, clonsec)
                         print (wstr)
                         if waypoint:
@@ -358,6 +366,9 @@ try:
                           
                     if waypoint:                    # a foot from waypoint
                         if (distto(clatsec, clonsec, destlat, destlon) < 1.0):
+                            cstr = "{aWpt }"
+                            spisend(cstr)
+                            waypoint =  False
                             speed = 0
                             
                     robot.motor(speed, steer)
