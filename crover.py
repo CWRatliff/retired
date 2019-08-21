@@ -140,6 +140,10 @@ def spisend(cmd):
 #        break
 #=================================================================
 
+
+cstr = "{aStby}"
+spisend(cstr)
+
 try:
     while True:
 
@@ -310,21 +314,24 @@ try:
 #======================================================================
 #Keypad commands preceeded by a #
                  elif xchr == 'F':                   #goto waypoint
-                    wpt = int(cbuff[2:4])
-                    if wpt == 0:
-                        waypoint = False
-                        cstr = "{aAuto}"
-                        spisend(cstr)
-                    elif (wpt == 10):
-                        startlat = latsec
-                        startlon = lonsec
-                        destlat = waypts[10][0]
-                        destlon = waypts[10][1]
-                        comhdg = fromto(destlon, destlat, startlon, startlat)
-                        auto = True
-                        waypoint = True
-                        cstr = "{aWpt }"
-                        spisend(cstr)
+                    try:
+                        wpt = int(cbuff[2:4])
+                        if wpt == 0:
+                            waypoint = False
+                            cstr = "{aAuto}"
+                            spisend(cstr)
+                        elif (wpt == 10):
+                            startlat = latsec
+                            startlon = lonsec
+                            destlat = waypts[10][0]
+                            destlon = waypts[10][1]
+                            comhdg = fromto(destlon, destlat, startlon, startlat)
+                            auto = True
+                            waypoint = True
+                            cstr = "{aWp10}"
+                            spisend(cstr)
+                    except ValueError:
+                        print("bad data" + cbuff)
 
 #======================================================================
                  elif xchr == 'L':                   #lat/long input
@@ -341,6 +348,8 @@ try:
                         print (wstr)
                         if waypoint:
                             nowhdg = fromto(clatsec, clonsec, destlon, destlat)
+                            cstr = "{c%3d}" % nowhdg
+                            spisend (cstr)
                             comhdg = nowhdg
 
                     except ValueError:
@@ -365,8 +374,11 @@ try:
                             steer = 180
                           
                     if waypoint:                    # a foot from waypoint
-                        if (distto(clatsec, clonsec, destlat, destlon) < 1.0):
-                            cstr = "{aWpt }"
+                        dtg = distto(clatsec, clonsec, destlat, destlon)
+                        cstr = "{d%5.1f}" % dtg
+                        spisend(cstr)
+                        if (dst < 1.0):
+                            cstr = "{aAuto}"
                             spisend(cstr)
                             waypoint =  False
                             speed = 0
