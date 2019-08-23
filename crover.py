@@ -56,8 +56,9 @@ clonsec = 0.0
 latcor = 0.0
 loncor = 0.0
 latitude = math.radians(34.24)
+lonshort = math.cos(latitude)
 ftpersec = 6076.0/60
-aftpersec = ftpersec * math.cos(latitude)
+aftpersec = ftpersec * lonshort
 
 left = False
 left_limit = -36
@@ -95,15 +96,17 @@ def pointline(la1, lo1, la2, lo2, lap0, lop0):
 #compute distance from lat/lon point to point on flat earth
 def distto(la0, lo0, la1, lo1):
     dely = (la1 - la0) * ftpersec
-    delx = (lo0 - lo1) * math.cos(latitude) * ftpersec
+    delx = (lo0 - lo1) * lonshort * ftpersec
     dist = math.sqrt(delx**2 + dely**2)
     return(dist)
 #===================================================================
 #compute angle from lat/lon point to point on flat earth
 def fromto(la0, lo0, la1, lo1):
-    delx = la1 - la0            #lat is +y
-    dely = lo0 - lo1            #long is -x direction
-    ang = math.atan2(delx, dely * math.cos(latitude))
+    delx = lo0 - lo1            #long is -x direction
+    dely = la1 - la0            #lat is +y
+    print("delx,y "+str(delx)+", "+str(dely)+", "+str(la1)+", "+str(la0))
+    ang = math.atan2(dely, delx * lonshort)
+    print("raw atan2: "+ str(ang))
     return((450 - math.degrees(ang))%360)
 
 #===================================================================
@@ -320,12 +323,16 @@ try:
                             waypoint = False
                             cstr = "{aAuto}"
                             spisend(cstr)
+                            cstr = "{d----}"
+                            spisend(cstr)
+                            cstr = "{c----}"
+                            spisend(cstr)
                         elif (wpt == 10):
                             startlat = latsec
                             startlon = lonsec
                             destlat = waypts[10][0]
                             destlon = waypts[10][1]
-                            comhdg = fromto(destlon, destlat, startlon, startlat)
+                            comhdg = fromto(startlat, startlon, destlat, destlon)
                             auto = True
                             waypoint = True
                             cstr = "{aWp10}"
@@ -347,7 +354,7 @@ try:
                         wstr = "Lat/long:%5.3f/%5.3f" % (clatsec, clonsec)
                         print (wstr)
                         if waypoint:
-                            nowhdg = fromto(clatsec, clonsec, destlon, destlat)
+                            nowhdg = fromto(clatsec, clonsec, destlat, destlon)
                             cstr = "{c%3d}" % nowhdg
                             spisend (cstr)
                             comhdg = nowhdg
@@ -373,11 +380,11 @@ try:
                         else:
                             steer = 180
                           
-                    if waypoint:                    # a foot from waypoint
+                    if waypoint:
                         dtg = distto(clatsec, clonsec, destlat, destlon)
                         cstr = "{d%5.1f}" % dtg
                         spisend(cstr)
-                        if (dst < 1.0):
+                        if (dtg < 1.0):             # a foot from waypoint
                             cstr = "{aAuto}"
                             spisend(cstr)
                             waypoint =  False
