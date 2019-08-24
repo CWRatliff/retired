@@ -104,9 +104,7 @@ def distto(la0, lo0, la1, lo1):
 def fromto(la0, lo0, la1, lo1):
     delx = lo0 - lo1            #long is -x direction
     dely = la1 - la0            #lat is +y
-    print("delx,y "+str(delx)+", "+str(dely)+", "+str(la1)+", "+str(la0))
     ang = math.atan2(dely, delx * lonshort)
-    print("raw atan2: "+ str(ang))
     return((450 - math.degrees(ang))%360)
 
 #===================================================================
@@ -142,9 +140,14 @@ def spisend(cmd):
 #    if (chr == 0):
 #        break
 #=================================================================
+#=================================================================
 
 
 cstr = "{aStby}"
+spisend(cstr)
+cstr = "{d----}"
+spisend(cstr)
+cstr = "{c----}"
 spisend(cstr)
 
 try:
@@ -186,9 +189,9 @@ try:
                     xchr = cbuff[2]
                     try:
                         x = float(cbuff[3:msglen-1])
-                        if (xchr == 'A'):
+                        if (xchr == 'T'):
                             latcor = x
-                        elif xchr == 'O':
+                        elif xchr == 'N':
                             loncor = x
                         print ("L/L corr:"+str(latcor) + "/"+ str(loncor))
 
@@ -327,15 +330,16 @@ try:
                             spisend(cstr)
                             cstr = "{c----}"
                             spisend(cstr)
-                        elif (wpt == 10):
+                        elif (wpt >= 10 and wpt <= 12):
                             startlat = latsec
                             startlon = lonsec
-                            destlat = waypts[10][0]
-                            destlon = waypts[10][1]
+                            destlat = waypts[wpt][0]
+                            destlon = waypts[wpt][1]
+                            print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
                             comhdg = fromto(startlat, startlon, destlat, destlon)
                             auto = True
                             waypoint = True
-                            cstr = "{aWp10}"
+                            cstr = "{aWp" + str(wpt) + "}"
                             spisend(cstr)
                     except ValueError:
                         print("bad data" + cbuff)
@@ -345,10 +349,10 @@ try:
                     xchr = cbuff[2]
                     try:
                         x = float(cbuff[3:msglen-1])
-                        if (xchr == 'A'):
+                        if (xchr == 'T'):
                             clatsec = latsec + latcor
                             latsec = x
-                        elif xchr == 'O':
+                        elif xchr == 'N':
                             lonsec = x
                             clonsec = lonsec + loncor
                         wstr = "Lat/long:%5.3f/%5.3f" % (clatsec, clonsec)
@@ -362,9 +366,9 @@ try:
                     except ValueError:
                         print("bad data" + cbuff)
                     finally:
-                        cstr = "{la%5.3f}" % clatsec
+                        cstr = "{lt%5.3f}" % clatsec
                         spisend(cstr)
-                        cstr = "{lo%5.3f}" % clonsec
+                        cstr = "{ln%5.3f}" % clonsec
                         spisend(cstr)
 
  #======================================================================
