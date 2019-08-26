@@ -1,3 +1,4 @@
+//190823 - added '.'s to msgs - seems to be SPI timing need
 #include <SPI.h>
 #include <Wire.h>
 #include "SparkFun_BNO080_Arduino_Library.h"
@@ -115,7 +116,7 @@ void loop() {
       hdg = hdg % 360;
 
       if (hdg != oldhdg) {
-        sprintf(str, "{O%d}.", hdg);
+        sprintf(str, "{O%d}..", hdg);
         for (char *p = &str[0]; *p; p++) {
           ibuffer[ihead++] = *p;
           ihead &= MASK;
@@ -152,14 +153,14 @@ void loop() {
     char latstr[10];
     char lonstr[10];
     dtostrf(latsec, 7, 4, latstr);
-    sprintf(str, "{LA%s}.", latstr);
+    sprintf(str, "{LT%s}....", latstr);
     Serial.println(str);
     for (char *p = &str[0]; *p; p++) {
        ibuffer[ihead++] = *p;
        ihead &= MASK;
        }
     dtostrf(lonsec, 6, 4, lonstr);
-    sprintf(str, "{LO%s}.", lonstr);
+    sprintf(str, "{LN%s}....", lonstr);
     Serial.println(str);
     for (char *p = &str[0]; *p; p++) {
        ibuffer[ihead++] = *p;

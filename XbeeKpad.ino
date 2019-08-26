@@ -40,6 +40,8 @@ char  inpt;
 
 int   exeflag = FALSE;
 int   lbflag = FALSE;
+int   lbcount = 0;
+char  lb1;
 
 char  ibuffer[BUFF];              // Xbee software input buffer
 int   itail = 0;
@@ -52,7 +54,17 @@ int   epoch;                      // last xmission time
 // print text numbers to lcd
 char* lcdout(char *s) {
   char  c;
-  while (isDigit(*s) || *s == '-') {
+  while (isDigit(*s) || *s == '-' || *s == '.' || *s == ' ') {
+    c = *s++;
+    lcd.print(c);
+    }
+  return (s);
+  }
+//==================================================================
+// print text to lcd
+char* lcdtext(char *s) {
+  char c;
+  while (*s) {
     c = *s++;
     lcd.print(c);
     }
@@ -73,6 +85,15 @@ void xmitnum(char code, char num) {
   Serial1.print("}");
   epoch = millis();
   } 
+//===================================================================  
+void xmit2num(char code, char num, char num2) {
+  Serial1.print("{");
+  Serial1.print(code);
+  Serial1.print(num);
+  Serial1.print(num2);
+  Serial1.print("}");
+  epoch = millis();
+  } 
 //====================================================================
 void setup(){
  
@@ -86,8 +107,12 @@ void setup(){
     lcd.print("Spd: ");
     lcd.setCursor(0, 1);
     lcd.print("Str: ");
+    lcd.setCursor(10, 1);
+    lcd.print("DTG: ");
     lcd.setCursor(0, 2);
     lcd.print("Hdg: ");
+    lcd.setCursor(10, 2);
+    lcd.print("CTG: ");
     lcd.setCursor(0, 3);
     lcd.print("L/L: ");
 
@@ -126,41 +151,40 @@ void loop() {
     if (ibuffer[0] == 'v') {
       lcd.setCursor(5, 0);
       lcdout(str);                        // print speed
-      lcd.print("   ");
+      lcd.print(" ");
       }
     if (ibuffer[0] == 's') {
       lcd.setCursor(5, 1);
       lcdout(str);                        // print steering
-      lcd.print("   ");
+      lcd.print(" ");
       }
     if (ibuffer[0] == 'h') {
       lcd.setCursor(5, 2);
       lcdout(str);                        // print heading
-      lcd.print("   ");
+      lcd.print(" ");
       }
-    /*
-    if (ibuffer[0] == 'r') {
-      lcd.setCursor(5, 3);
-      lcdout(str);                        // print roll
-      lcd.print("   ");
+    if (ibuffer[0] == 'd') {
+      lcd.setCursor(15, 1);
+      lcdout(str);                        // print distance to wpt
+      
+      lcd.print(" ");
       }
-    if (ibuffer[0] == 'p') {
-      lcd.setCursor(10, 3);
-      lcdout(str);                        // print pitch
-      lcd.print("   ");
+    if (ibuffer[0] == 'c') {
+      lcd.setCursor(15, 2);
+      lcdout(str);                        // print course to wpt
+      lcd.print(" ");
       }
-      */
     if (ibuffer[0] == 'a') {              // auto/stby status
       lcd.setCursor(16, 0);
-      lcdout(str);
+      lcdtext(str);
       }
     if (ibuffer[0] == 'l') {
       str = &ibuffer[2];
-      if (ibuffer[1] == 'a') {
+      if (ibuffer[1] == 't') {
         lcd.setCursor(5, 3);
         lcdout(str);
         }
-      if (ibuffer[1] == 'o') {
+      if (ibuffer[1] == 'n') {
         lcd.setCursor(12, 3);
         lcdout(str);
         }
@@ -181,6 +205,7 @@ void loop() {
         
       else if (kpad == '#') {
         lbflag = TRUE;
+        lbcount = 0;
         exeflag = FALSE;
         Serial.print("hatch found");
         }
@@ -191,8 +216,14 @@ void loop() {
         }
         
       else if (lbflag && kpad >= '0' && kpad <= '9') {
-        xmitnum(FUNCTION, kpad);
-        lbflag = FALSE;
+        if (lbcount == 0) {
+          lb1 = kpad;
+          lbcount++;
+          }
+        else if (lbcount == 1) {
+          xmit2num(FUNCTION, lb1, kpad);
+          lbflag == FALSE;
+          }
         }
 
       else if (kpad >= '0' && kpad <= '9') {
