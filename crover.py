@@ -5,14 +5,15 @@
 #190720 - improved compass following
 #190802 - U turns
 #190816 - GPS, waypoints
+#190826 - routes, compass corrections
 
 '''
 +---------+----------+----------+  +---------+----------+----------+
 | L 1deg  | Fwd      | R 1deg   |  | L 90deg | Auto     | R 90deg  |
 |         |          |          |  |         |          |          |
 +---------+----------+----------+  +---------+----------+----------+
-| L 5deg  | 0 steer  | R 5deg   |  |         |          |          |
-|         |          |          |  |         |          |          |
+| L 5deg  | 0 steer  | R 5deg   |  | Mag     |          | Mag      |
+|         |          |          |  | L 1deg  |          | R 1deg   |
 +---------+----------+----------+  +---------+----------+----------+
 | L 35deg | Rev      | R 35deg  |  | L 180   |          | R 180    |
 |         |          |          |  |         |          |          |
@@ -44,7 +45,6 @@ oldsteer = 500
 oldspeed = 500
 oldhdg = 500
 auto = False
-waypoint = False
 azimuth = 0
 compass_adjustment = 230
 latsec = 0.0
@@ -68,19 +68,29 @@ wstr = ""
 cbuff = ""
 flag = False
 
+rteflag = False
+rtseg = 0
+routes = [[0,0],
+[12, 10, 0],
+[11, 10, 11, 0],
+[0]]
+          
+wptdist = 0.0
+wptflag = False
 waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
-[22.678, 9.399],            #10 open area near main gate
-[20.808, 7.73],             #11 mid speed bump
-[20.641, 7.396],            #12 center parking 'T' seam
+[22.678, 9.399],                    #10 open area near main gate
+[20.808, 7.73, "speed bump"],       #11 mid speed bump
+[20.641, 7.396],                    #12 center parking 'T' seam
 [11,12]]
 
 robot = motor_driver.motor_driver()
 
-print("Rover 1.0 190816")
+print("Rover 1.0 190826")
 
 #===================================================================
 #compute distance from a point to a line
-def pointline(la1, lo1, la2, lo2, lap0, lop0):
+# dist is + if L1P rotates left into L1L2, else negative
+def pointline(la1, lo1, la2, lo2, lap0, lop0, llen):
     aa1 = la1 * ftpersec 
     ao1 = lo1 * aftpersec
     aa2 = la2 * ftpersec
@@ -89,8 +99,7 @@ def pointline(la1, lo1, la2, lo2, lap0, lop0):
     aop0 = lop0 * aftpersec
     dely = aa2 - aa1
     delx = ao2 - ao1
-    linedist = math.sqrt(delx**2 + dely**2)
-    dist = abs(dely*aop0 - delx*aap0 + ao2*aa1 - aa2*ao1) / linedist
+    dist = abs(dely*aop0 - delx*aap0 + ao2*aa1 - aa2*ao1) / llen
     return (dist)
 #===================================================================
 #compute distance from lat/lon point to point on flat earth
@@ -207,7 +216,7 @@ try:
                         speed = 0
                         robot.motor(speed, steer)
 
-                    if xchr == '1':                     # 1 - Left
+                    elif xchr == '1':                     # 1 - Left
                         if (auto):
                             azimuth -= 1
                         else:
@@ -297,22 +306,26 @@ try:
                         azimuth = hdg
                         cstr = "{aStby}"
                         spisend(cstr)
-                    if (auto and xchr == '1'):      #left 90 deg
+                    elif (auto and xchr == '1'):      #left 90 deg
                         azimuth -= 90
                         azimuth %= 360
-                    if (xchr == '2'):               #autopilot on
+                    elif (xchr == '2'):               #autopilot on
                         auto = True
                         azimuth = hdg
                         cstr = "{aAuto}"
                         spisend(cstr)
-                    if (auto and xchr == '3'):      #right 90 deg
+                    elif (auto and xchr == '3'):      #right 90 deg
                         azimuth += 90
                         azimuth %= 360
-                    if (auto and xchr == '7'):      #left 180 deg
+                    elif (xchr == '4'):               #adj compass
+                        compass_adjustmant -= 1
+                    elif (xchr == '6'):               #adj compass
+                        compass_adjustmant += 1
+                    elif (auto and xchr == '7'):      #left 180 deg
                         left = True
                         azimuth -= 180
                         azimuth %= 360
-                    if (auto and xchr == '9'):      #right 180 deg
+                    elif (auto and xchr == '9'):      #right 180 deg
                         left = False
                         azimuth += 180
                         azimuth %= 360
@@ -323,22 +336,31 @@ try:
                     try:
                         wpt = int(cbuff[2:4])
                         if wpt == 0:
-                            waypoint = False
+                            wptflag = False
+                            auto = True
                             cstr = "{aAuto}"
                             spisend(cstr)
                             cstr = "{d----}"
                             spisend(cstr)
                             cstr = "{c----}"
                             spisend(cstr)
-                        elif (wpt >= 10 and wpt <= 12):
+                        elif (wpt >0 and wpt < 2):
+                            route = wpt
+                            rteflag= True
+                            rtseg = 0
+                            wptflag = True
+                            firstwpt = route[wpt][0]
+                            wpt = firstwpt
+                        if (wpt >= 10 and wpt <= 12):
                             startlat = latsec
                             startlon = lonsec
                             destlat = waypts[wpt][0]
                             destlon = waypts[wpt][1]
                             print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
-                            comhdg = fromto(startlat, startlon, destlat, destlon)
+                            azimuth = fromto(startlat, startlon, destlat, destlon)
+                            wptdist = distto(startlat, startlon, destlat, destlon)
                             auto = True
-                            waypoint = True
+                            wptflag = True
                             cstr = "{aWp" + str(wpt) + "}"
                             spisend(cstr)
                     except ValueError:
@@ -357,11 +379,11 @@ try:
                             clonsec = lonsec + loncor
                         wstr = "Lat/long:%5.3f/%5.3f" % (clatsec, clonsec)
                         print (wstr)
-                        if waypoint:
+                        if wptflag:
                             nowhdg = fromto(clatsec, clonsec, destlat, destlon)
                             cstr = "{c%3d}" % nowhdg
                             spisend (cstr)
-                            comhdg = nowhdg
+                            azimuth = nowhdg
 
                     except ValueError:
                         print("bad data" + cbuff)
@@ -373,6 +395,38 @@ try:
 
  #======================================================================
                  if (auto):                          #adjust for > 180 turning
+                            
+                    if wptflag:
+                        dtg = distto(clatsec, clonsec, destlat, destlon)
+                        cstr = "{d%5.1f}" % dtg
+                        spisend(cstr)
+                        
+                        if (dtg < 1.0):             # a foot from waypoint
+                             if rteflag:
+                                rtseg += 1
+                                wpt = routes[route][rtseg]
+                                startlat = latsec         #dup'ed code
+                                startlon = lonsec
+                                destlat = waypts[wpt][0]
+                                destlon = waypts[wpt][1]
+                                print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
+                                azimuth = fromto(startlat, startlon, destlat, destlon)
+                                wptdist = distto(startlat, startlon, destlat, destlon)
+                                cstr = "{aWp" + str(wpt) + "}"
+                                spisend(cstr)
+
+                             else:
+                                cstr = "{aAuto}"
+                                spisend(cstr)
+                                wptflag =  False
+
+                        nowhdg = fromto(clatsec, clonsec, destlat, destlon)
+                        angle = nowhdg - azimuth
+                        dst = pointline(startlat, startlon, destlat, destlon, clatsec, clonsec, wptdist) 
+                        if (dst > 3 or angle > 3):
+                            compass_adjustment -= 1
+                        if (dst < -3 or angle < -3):
+                            compass_adjustment += 1
                     steer = azimuth - hdg
                     if (steer < -180):
                         steer = steer + 360
@@ -383,17 +437,6 @@ try:
                             steer = -180
                         else:
                             steer = 180
-                          
-                    if waypoint:
-                        dtg = distto(clatsec, clonsec, destlat, destlon)
-                        cstr = "{d%5.1f}" % dtg
-                        spisend(cstr)
-                        if (dtg < 1.0):             # a foot from waypoint
-                            cstr = "{aAuto}"
-                            spisend(cstr)
-                            waypoint =  False
-                            speed = 0
-                            
                     robot.motor(speed, steer)
                         
                  if (hdg != oldhdg):
