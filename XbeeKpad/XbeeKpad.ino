@@ -54,7 +54,7 @@ int   epoch;                      // last xmission time
 // print text numbers to lcd
 char* lcdout(char *s) {
   char  c;
-  while (isDigit(*s) || *s == '-' || *s == '.') {
+  while (isDigit(*s) || *s == '-' || *s == '.' || *s == ' ') {
     c = *s++;
     lcd.print(c);
     }
@@ -166,6 +166,7 @@ void loop() {
     if (ibuffer[0] == 'd') {
       lcd.setCursor(15, 1);
       lcdout(str);                        // print distance to wpt
+      
       lcd.print(" ");
       }
     if (ibuffer[0] == 'c') {
@@ -179,11 +180,11 @@ void loop() {
       }
     if (ibuffer[0] == 'l') {
       str = &ibuffer[2];
-      if (ibuffer[1] == 'a') {
+      if (ibuffer[1] == 't') {
         lcd.setCursor(5, 3);
         lcdout(str);
         }
-      if (ibuffer[1] == 'o') {
+      if (ibuffer[1] == 'n') {
         lcd.setCursor(12, 3);
         lcdout(str);
         }
@@ -223,9 +224,6 @@ void loop() {
           xmit2num(FUNCTION, lb1, kpad);
           lbflag == FALSE;
           }
-          
-        xmitnum(FUNCTION, kpad);
-        lbflag = FALSE;
         }
 
       else if (kpad >= '0' && kpad <= '9') {
