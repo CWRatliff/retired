@@ -72,6 +72,30 @@ void loop() {
     double trash;
     int hdg;
     
+    // read Xbee input and upload to Pi
+    while (Serial1.available()) {
+      xchr = Serial1.read();
+//      Serial.println(xchr);
+      ibuffer[ihead++] = xchr;
+      ihead &= MASK;
+      if (xchr == '}') {
+        ibuffer[ihead++] = 0;
+        ihead &= MASK;
+        break;
+        }
+      }
+      
+    // if any data waiting in output buffer, transmit via Xbee    
+    while (ohead != otail) {
+      if (Serial1.availableForWrite()) {
+        Serial.write(obuffer[otail]);
+        Serial1.write(obuffer[otail++]);
+        otail &= MASK;
+        }
+      else
+        break;
+      }
+    
   if (myIMU.dataAvailable() == true) {
     qx = myIMU.getQuatI();
     qy = myIMU.getQuatJ();
@@ -166,29 +190,5 @@ void loop() {
        ibuffer[ihead++] = *p;
        ihead &= MASK;
        }
-    
-    // read Xbee input and upload to Pi
-    while (Serial1.available()) {
-      xchr = Serial1.read();
-//      Serial.println(xchr);
-      ibuffer[ihead++] = xchr;
-      ihead &= MASK;
-      if (xchr == '}') {
-        ibuffer[ihead++] = 0;
-        ihead &= MASK;
-        break;
-        }
-      }
-      
-    // if any data waiting in output buffer, transmit via Xbee    
-    while (ohead != otail) {
-      if (Serial1.availableForWrite()) {
-        Serial.write(obuffer[otail]);
-        Serial1.write(obuffer[otail++]);
-        otail &= MASK;
-        }
-      else
-        break;
-      }
     }
   } 
