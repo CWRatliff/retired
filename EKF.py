@@ -19,7 +19,11 @@ Q = np.diag([1.0, 1.0])**2                    # process noise covariance
 R = np.diag([0.1, 0.1, np.deg2rad(1.0), 1.0])**2 # measurement noise covariance
 
 # predict new position based on dead reconning
+# x - state vector input output
+# u - [speed, steer]
 def motion_model(x, u):
+    print("motion x", x)
+    print("motion u", u)
     F = np.array([[1.0, 0, 0, 0],             # state transition matrix
                   [0, 1.0, 0, 0],
                   [0, 0, 1.0, 0],
@@ -28,10 +32,19 @@ def motion_model(x, u):
                   [DT * math.sin(u[1]), 0],
                   [0.0, DT],
                   [1.0, 0.0]])
-    x = xEst
+    print("motion B", B)
+    Bu = B.dot(u)
+    print("motion Bu", Bu)
+    But = Bu.T
+    print("motion BuT", But)
     x = F.dot(x) + B.dot(u)
+#   x = F.dot(x) + Bu.T
+#    x = x.T
+    print("motion ret x", x)
     return x
     
+# x - state vector
+# z - state vector with observations
 def observation_model(x):
     H = np.array([                              # measurement function
         [1, 0, 0, 0],
@@ -42,40 +55,68 @@ def observation_model(x):
     print("obs_mod z", z)
     return z
 
-#motion model Jacobian matrix   
+#motion model Jacobian matrix
+# x - state vector
+# u - input vector
 def jacobiF(x, u):
+    v = u[0]
+    d = DT * v
+    alpha = u[1]
+    sina = math.sin(alpha)
+    print("sina", sina)
+    cosa = math.cos(alpha)
+    dsina = sina * d
+    print("dsina", dsina)
+    dcosa = cosa * d
     jF=np.array([
-        [1.0, 0.0, -DT * u[0] * math.sin(u[1]), DT * math.cos(u[1])],
-        [0.0, 1.0, DT * u[0] * math.cos(u[1]), DT * math.sin(u[1])],
+        [1.0, 0.0, -dsina, DT * cosa],
+        [0.0, 1.0, dcosa , DT * sina],
         [0.0, 0.0, 1.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]])
     return jF
 
 #observation model Jacobian matrix
+# x - state vector
 def jacobiH(x):
     jH = np.array([
         [1, 0, 0, 0],
         [0, 1, 0, 0]])
     return jH
 
-#
+# xEst - state vector
+# pEst - state transition matrix
+# z - GPS input
+# u speed/steering input
 def Kalman_filter(xEst, pEst, z, u):
     # predict
     xPred = motion_model(xEst, u)
+    print ("xPred", xPred)
     jF = jacobiF(xPred, u)
     print("jF",jF)
     print("pEst", pEst)
     print("R", R)
-    pPred = jF.dot(pEst).dot(jF.T) + R
+#    pPred = jF.dot(pEst).dot(jF.T) + R
+    pPred = jF.dot(pEst)
+    print("Pred0", pPred)
+    pPred = pPred.dot(jF.T) + R
+    print("Pred1", pPred)
+    pPred = pPred + R
+    print("Pred2", pPred)
     
     # update
     jH = jacobiH(xPred)
-    print ("xPred", xPred)
     zPred = observation_model(xPred)
     print("z", z)
     print("zPred", zPred)
     y = z.T - zPred
-    S = jH.dot(pPred).dot(jH.T) + Q
+#    S = jH.dot(pPred).dot(jH.T) + Q
+    S = jH.dot(pPred)
+    print("K-F S1", S)
+    S = S.dot(jH.T)
+    print("K-F S2", S)
+    print("K-F Q", Q)
+    S = S + Q
+    print("K-F S", S)
     K = pPred.dot(jH.T).dot(np.linalg.inv(S))
     xEst = xPred + K.dot(y)
     pEst = (np.eye(len(xEst)) - K.dot(jH)).dot(pPred)
@@ -92,8 +133,8 @@ def Kalman_start(begin):
 # lonft - x-axis
 # latft - y-axis
 def Kalman_step(DT, speed, hdg, x, y):
-    u = np.array([speed, hdg])
-    z = np.array([x, y])
+    u = (np.array([[speed, hdg]])).T
+    z = np.array([[x, y]])
     nxEst, npEst = Kalman_filter(xEst, pEst, z, u)
     return nxEst, npEst
 
@@ -110,9 +151,7 @@ for i in range(2):
     x = test[i][3] + lonfeet
     y = test[i][4] * latfeet
     
-    loc = [x, y]
+    z = [x, y]
     u = [spd, ang]
     print (spd, ang, x, y)
-    nloc = motion_model(loc, u)
-    print(nloc)
     xnew = Kalman_step(deltaT, spd, ang, x, y)
