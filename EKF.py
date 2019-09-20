@@ -8,30 +8,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 spdfactor = .005
-lonfeet = 82.0
-latfeet = 100.0
+lonfeet = 1 #82.0
+latfeet = 1 #100.0
 
 DT = 1
 t0 = 0;
+ang = 0
 xEst = np.zeros((4,1))                        # state vector
 pEst = np.zeros((4,4))                        # state covariance matrix
 Q = np.diag([1.0, 1.0])**2                    # process noise covariance  
-R = np.diag([0.1, 0.1, np.deg2rad(1.0), 1.0])**2 # measurement noise covariance
+R = np.diag([0.1, 0.1, .1, np.deg2rad(1.0)])**2 # measurement noise covariance
 
 # predict new position based on dead reconning
 # x - state vector input output
 # u - [speed, steer]
 def motion_model(x, u):
-    print("motion x", x)
-    print("motion u", u)
     F = np.array([[1.0, 0, 0, 0],             # state transition matrix
                   [0, 1.0, 0, 0],
                   [0, 0, 1.0, 0],
                   [0, 0, 0, 1.0]])
     B = np.array([[DT * math.cos(u[0, 1]), 0],
                   [DT * math.sin(u[0, 1]), 0],
-                  [0.0, DT],
-                  [1.0, 0.0]])
+                  [DT, 0],
+                  [0.0, 1.0]])
 
     x = F.dot(x) + B.dot(u.T)
 
@@ -80,7 +79,6 @@ def jacobiH():
 def Kalman_filter(xEst, pEst, z, u):
     # predict
     xPred = motion_model(xEst, u)
-    print ("xPred", xPred)
     jF = jacobiF(u)
     print("jF",jF)
     print("pEst", pEst)
@@ -91,11 +89,9 @@ def Kalman_filter(xEst, pEst, z, u):
     # update
     jH = jacobiH()
     zPred = observation_model(xPred)
-    print("z", z)
     print("zPred", zPred)
     y = z.T - zPred
     S = jH.dot(pPred).dot(jH.T) + Q
-    print("K-F S", S)
     K = pPred.dot(jH.T).dot(np.linalg.inv(S))
     xEst = xPred + K.dot(y)
     pEst = (np.eye(len(xEst)) - K.dot(jH)).dot(pPred)
@@ -119,17 +115,19 @@ def Kalman_step(DT, speed, hdg, x, y):
     return nxEst, npEst
 
 test = [
-    [1, 60, 325, 7.123, 20.345],
-    [2, 60, 326, 7.146, 20.444],
+    [1, 60, 10, .1, .2],
+    [2, 60, 15, .2, .4],
     ]
 for i in range(2):
     deltaT = test[i][0] - t0
     t0 = test[i][0]
+    omega = (test[i][2] - ang) / deltaT
+    ang = test[i][2]
     spd = test[i][1] * spdfactor
-#    ang = np.deg2rad(450-test[0][2])
-    ang = 3.14157/180*(450-test[i][2])
+    omega = np.deg2rad(omega)
     x = -test[i][3] + lonfeet
     y = test[i][4] * latfeet
 
     print (spd, ang, x, y)
-    xnew = Kalman_step(deltaT, spd, ang, x, y)
+    xEst, pEst = Kalman_step(deltaT, spd, omega, x, y)
+    print("Kalman new est", xEst)
