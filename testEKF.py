@@ -6,12 +6,14 @@ lonfeet = 1 #82.0
 latfeet = 1 #100.0
 t0 = 0
 ang = 0
-
-Kfilter = cEKF.Kalman_filter()
 test = [
     [1, 60, 10, .1, .2],
     [2, 60, 15, .2, .4],
     ]
+
+Kfilter = cEKF.Kalman_filter()
+
+Kfilter.Kalman_start(0, 0, 0, 0, 60*spdfactor)
 for i in range(2):
     deltaT = test[i][0] - t0
     t0 = test[i][0]
@@ -19,9 +21,9 @@ for i in range(2):
     ang = test[i][2]
     spd = test[i][1] * spdfactor
     omega = np.deg2rad(omega)
-    x = -test[i][3] + lonfeet
-    y = test[i][4] * latfeet
+    xl = -test[i][3] * lonfeet
+    yl = test[i][4] * latfeet
 
-    print (spd, ang, x, y)
-    xest = Kfilter.Kalman_step(deltaT, spd, omega, x, y)
+    print (spd, omega, xl, yl)
+    xest = Kfilter.Kalman_step(deltaT, spd, omega, xl, yl)
     print("Kalman new est", xest)

@@ -16,7 +16,7 @@ class Kalman_filter:
         self.xEst = np.zeros((4,1))                        # state vector
         self.pEst = np.zeros((4,4))                        # state covariance matrix
         self.Q = np.diag([1.0, 1.0])**2                    # process noise covariance  
-        self.R = np.diag([0.1, 0.1, .1, np.deg2rad(1.0)])**2 # measurement noise covariance
+        self.R = np.diag([0.1, 0.1, np.deg2rad(1.0), .1])**2 # measurement noise covariance
 
     # predict new position based on dead reconning
     # x - state vector input output
@@ -28,9 +28,9 @@ class Kalman_filter:
                       [0, 0, 0, 1.0]])
         B = np.array([[self.DT * math.cos(u[0, 1]), 0],
                       [self.DT * math.sin(u[0, 1]), 0],
-                      [self.DT, 0],
-                      [0.0, 1.0]])
-
+                      [0, self.DT],
+                      [1.0, 0.0]])
+        print("motion B", B)
         x = F.dot(x) + B.dot(u.T)
 
         print("motion ret x", x)
@@ -62,6 +62,7 @@ class Kalman_filter:
             [0.0, 1.0, dcosa , self.DT * sina],
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]])
+        print("jacobiF", jF)
         return jF
 
     #observation model Jacobian matrix
@@ -97,20 +98,24 @@ class Kalman_filter:
         return self.xEst
 
 
-    def Kalman_start(self, begin):
+    def Kalman_start(self, begin, x, y, phi, v):
         self.t0 = begin
         self.xEst = np.zeros((4,1))              # infinite a priori
-        self.pEst = np.zeros((4,1))
+        self.pEst = np.zeros((4,4))
+        self.xEst[0, 0] = x
+        self.xEst[1, 0] = y
+        self.xEst[2, 0] = phi
+        self.xEst[3, 0] = v
 
     # time - delta T of sample
     # speed - fps
     # hdg - radians (x-axis zero)
     # x - x-axis
     # y - y-axis
-    def Kalman_step(self, DelT, speed, hdg, x, y):
+    def Kalman_step(self, DelT, x, y, omega, v):
     #    u = (np.array([[speed, hdg]])).T
         self.DT = DelT
-        u = (np.array([[speed, hdg]]))
+        u = np.array([[v, omega]])
         z = np.array([[x, y]])
         self.xEst = self.Kalman_update(z, u)
         return self.xEst
