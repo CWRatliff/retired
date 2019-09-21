@@ -26,9 +26,9 @@ class Kalman_filter:
                       [0, 1.0, 0, 0],
                       [0, 0, 1.0, 0],
                       [0, 0, 0, 1.0]])
-        B = np.array([[DT * math.cos(u[0, 1]), 0],
-                      [DT * math.sin(u[0, 1]), 0],
-                      [DT, 0],
+        B = np.array([[self.DT * math.cos(u[0, 1]), 0],
+                      [self.DT * math.sin(u[0, 1]), 0],
+                      [self.DT, 0],
                       [0.0, 1.0]])
 
         x = F.dot(x) + B.dot(u.T)
@@ -58,8 +58,8 @@ class Kalman_filter:
         dsina = sina * d
         dcosa = cosa * d
         jF=np.array([
-            [1.0, 0.0, -dsina, DT * cosa],
-            [0.0, 1.0, dcosa , DT * sina],
+            [1.0, 0.0, -dsina, self.DT * cosa],
+            [0.0, 1.0, dcosa , self.DT * sina],
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]])
         return jF
@@ -75,25 +75,26 @@ class Kalman_filter:
     # pEst - state transition matrix
     # z - GPS input
     # u speed/steering input
-    def Kalman_filter(self, z, u):
+    def Kalman_update(self, z, u):
         # predict
-        xPred = motion_model(xEst, u)
-        jF = jacobiF(u)
+        xPred = self.motion_model(self.xEst, u)
+        jF = self.jacobiF(u)
         print("jF",jF)
-        print("pEst", pEst)
-        print("R", R)
-        pPred = jF.dot(pEst).dot(jF.T) + R
+        print("pEst", self.pEst)
+        print("R", self.R)
+        pPred = jF.dot(self.pEst).dot(jF.T) + self.R
         print("Pred", pPred)
         
         # update
-        jH = jacobiH()
-        zPred = observation_model(xPred)
+        jH = self.jacobiH()
+        zPred = self.observation_model(xPred)
         print("zPred", zPred)
         y = z.T - zPred
-        S = jH.dot(pPred).dot(jH.T) + Q
+        S = jH.dot(pPred).dot(jH.T) + self.Q
         K = pPred.dot(jH.T).dot(np.linalg.inv(S))
         self.xEst = xPred + K.dot(y)
-        self.pEst = (np.eye(len(xEst)) - K.dot(jH)).dot(pPred)
+        self.pEst = (np.eye(len(self.xEst)) - K.dot(jH)).dot(pPred)
+        return self.xEst
 
 
     def Kalman_start(self, begin):
@@ -111,6 +112,6 @@ class Kalman_filter:
         self.DT = DelT
         u = (np.array([[speed, hdg]]))
         z = np.array([[x, y]])
-        self.xEst, self.pEst = Kalman_filter(xEst, pEst, z, u)
-
+        self.xEst = self.Kalman_update(z, u)
+        return self.xEst
 
