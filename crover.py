@@ -21,6 +21,25 @@
 |         | Stop     |          |  |  *      | Stby     |          |
 |         |          |          |  |         |          |          |
 +---------+----------+----------+  +---------+----------+----------+
+
+Sent codes:
+a - status
+c - course to wpt
+d - distance to wpt
+h - heading
+lt, ln lat/long
+p - pitch
+r - roll
+s - steering angle
+v - speed
+
+Received codes
+C - GPS corrections
+D - one digit commands
+E - 'star' commnds
+F - 'pound' commands
+L - Lat/Lon
+O - compass heading
 '''
 import sys
 import time
@@ -46,13 +65,15 @@ oldspeed = 500
 oldhdg = 500
 auto = False
 azimuth = 0
-compass_adjustment = 230
+compass_adjustment = 257
 latsec = 0.0
 lonsec = 0.0
 startlat = 0.0
 startlon = 0.0
 clatsec = 0.0
 clonsec = 0.0
+oclatsec = 0.0
+oclonsec = 0.0
 latcor = 0.0
 loncor = 0.0
 latitude = math.radians(34.24)
@@ -70,22 +91,35 @@ flag = False
 
 rteflag = False
 rtseg = 0
-routes = [[0,0],
-[12, 10, 0],
-[11, 10, 11, 0],
+routes = [[0,0],                    #0
+[12, 10, 0],                        #1
+[11, 10, 11, 0],                    #2
+[14, 15, 16, 17, 0],                #3
 [0]]
           
 wptdist = 0.0
 wptflag = False
 waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.678, 9.399],                    #10 open area near main gate
-[20.808, 7.73, "speed bump"],       #11 mid speed bump
+[20.808, 7.730, "speed bump"],      #11 mid speed bump
 [20.641, 7.396],                    #12 center parking 'T' seam
+[20.945, 6.375, "gar door"],        #13
+[20.987, 6.066, "driveway center"], #14
+[20.830, 5.945, "gravel"],          #15
+[20.200, 5.556, "woodpile"],        #16
+[19.372, 6.355, "stairs pivot"],    #17
+[19.071, 6.840, "shed #4"],         #18
+[18.393, 6.283, "longe center"],    #19
+[18.181, 7.900, "stall ctr"],       #20
+[21.174, 6.110, "E dway start"],    #21
+[21.675, 6.576, "tool shed area"],  #22
+[22.173, 6.837, "canopy c/l"],      #23
+[22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
 robot = motor_driver.motor_driver()
 
-print("Rover 1.0 190826")
+print("Rover 1.0 190904")
 
 #===================================================================
 #compute distance from a point to a line
@@ -176,7 +210,7 @@ try:
                 flag = True
                 tt=time.localtime()
                 ts=time.strftime("%H:%M:%S ", tt)
-                print("msg; " + ts + cbuff)
+                print("msg: " + ts + cbuff)
                 break
             #endwhile
 
@@ -216,7 +250,7 @@ try:
                         speed = 0
                         robot.motor(speed, steer)
 
-                    elif xchr == '1':                     # 1 - Left
+                    elif xchr == '1':                   # 1 - Left
                         if (auto):
                             azimuth -= 1
                         else:
@@ -318,9 +352,9 @@ try:
                         azimuth += 90
                         azimuth %= 360
                     elif (xchr == '4'):               #adj compass
-                        compass_adjustmant -= 1
+                        compass_adjustment -= 1
                     elif (xchr == '6'):               #adj compass
-                        compass_adjustmant += 1
+                        compass_adjustment += 1
                     elif (auto and xchr == '7'):      #left 180 deg
                         left = True
                         azimuth -= 180
@@ -337,26 +371,29 @@ try:
                         wpt = int(cbuff[2:4])
                         if wpt == 0:
                             wptflag = False
-                            auto = True
-                            cstr = "{aAuto}"
+                            auto = False
+                            cstr = "{aStby}"
                             spisend(cstr)
                             cstr = "{d----}"
                             spisend(cstr)
-                            cstr = "{c----}"
+                            cstr = "{c---}"
                             spisend(cstr)
-                        elif (wpt >0 and wpt < 2):
+                            speed = 0
+                            steer = 0
+                            robot.motor(speed, steer)
+                        elif (wpt >0 and wpt < 4):
                             route = wpt
                             rteflag= True
                             rtseg = 0
                             wptflag = True
-                            firstwpt = route[wpt][0]
+                            firstwpt = routes[wpt][0]
                             wpt = firstwpt
-                        if (wpt >= 10 and wpt <= 12):
+                        if (wpt >= 10 and wpt <= 24):
                             startlat = latsec
                             startlon = lonsec
                             destlat = waypts[wpt][0]
                             destlon = waypts[wpt][1]
-                            print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
+                            print ("wpt: "+ str(wpt)+','+str(destlat)+','+str(destlon))
                             azimuth = fromto(startlat, startlon, destlat, destlon)
                             wptdist = distto(startlat, startlon, destlat, destlon)
                             auto = True
@@ -372,26 +409,31 @@ try:
                     try:
                         x = float(cbuff[3:msglen-1])
                         if (xchr == 'T'):
-                            clatsec = latsec + latcor
                             latsec = x
+                            clatsec = latsec + latcor
                         elif xchr == 'N':
                             lonsec = x
                             clonsec = lonsec + loncor
-                        wstr = "Lat/long:%5.3f/%5.3f" % (clatsec, clonsec)
+                        wstr = "Lat/Lon:%5.3f/%5.3f" % (clatsec, clonsec)
                         print (wstr)
                         if wptflag:
                             nowhdg = fromto(clatsec, clonsec, destlat, destlon)
                             cstr = "{c%3d}" % nowhdg
                             spisend (cstr)
+                            print(cstr)
                             azimuth = nowhdg
 
                     except ValueError:
                         print("bad data" + cbuff)
                     finally:
-                        cstr = "{lt%5.3f}" % clatsec
-                        spisend(cstr)
-                        cstr = "{ln%5.3f}" % clonsec
-                        spisend(cstr)
+                        if (clatsec != oclatsec):
+                            cstr = "{lt%5.3f}" % clatsec
+                            spisend(cstr)
+                            oclatsec = clatsec
+                        if (clonsec != oclonsec):
+                            cstr = "{ln%5.3f}" % clonsec
+                            spisend(cstr)
+                            oclonsec = clonsec
 
  #======================================================================
                  if (auto):                          #adjust for > 180 turning
@@ -400,34 +442,45 @@ try:
                         dtg = distto(clatsec, clonsec, destlat, destlon)
                         cstr = "{d%5.1f}" % dtg
                         spisend(cstr)
+                        print(cstr)
                         
-                        if (dtg < 1.0):             # a foot from waypoint
+                        if (dtg < 3.0):             # a foot from waypoint
                              if rteflag:
                                 rtseg += 1
                                 wpt = routes[route][rtseg]
+                                if (wpt == 0):
+                                    cstr = "{Stby}"
+                                    spisend(cstr)
+                                    wptflg = False
+                                    rteflag = False
+                                    speed = 0
                                 startlat = latsec         #dup'ed code
                                 startlon = lonsec
                                 destlat = waypts[wpt][0]
                                 destlon = waypts[wpt][1]
                                 print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
-                                azimuth = fromto(startlat, startlon, destlat, destlon)
-                                wptdist = distto(startlat, startlon, destlat, destlon)
+                                azimuth = fromto(startlat, startlon,\
+                                    destlat, destlon)
+                                wptdist = distto(startlat, startlon, \
+                                    destlat, destlon)
                                 cstr = "{aWp" + str(wpt) + "}"
                                 spisend(cstr)
 
                              else:
-                                cstr = "{aAuto}"
+                                cstr = "{aStby}"
                                 spisend(cstr)
                                 wptflag =  False
 
-                        nowhdg = fromto(clatsec, clonsec, destlat, destlon)
-                        angle = nowhdg - azimuth
-                        dst = pointline(startlat, startlon, destlat, destlon, clatsec, clonsec, wptdist) 
-                        if (dst > 3 or angle > 3):
-                            compass_adjustment -= 1
-                        if (dst < -3 or angle < -3):
-                            compass_adjustment += 1
-                    steer = azimuth - hdg
+                        if (rteflag or wptflag):
+                            nowhdg = fromto(clatsec, clonsec, destlat, destlon)
+                            angle = nowhdg - azimuth
+                            dst = pointline(startlat, startlon, \
+                                destlat, destlon, clatsec, clonsec, wptdist) 
+                            if (dst > 3 or angle > 3):
+                                compass_adjustment -= 1
+                            if (dst < -3 or angle < -3):
+                                compass_adjustment += 1
+                    steer = int(azimuth - hdg)
                     if (steer < -180):
                         steer = steer + 360
                     elif (steer > 180):
@@ -440,17 +493,17 @@ try:
                     robot.motor(speed, steer)
                         
                  if (hdg != oldhdg):
-                    cstr = "{h"+str(hdg)+"}"
+                    cstr = "{h%3d}" % hdg
                     spisend(cstr)
                     oldhdg = hdg
                     print(cstr)
                  if (speed != oldspeed):
-                    cstr = "{v"+str(speed)+"}"
+                    cstr = "{v%4d}" % speed
                     spisend(cstr)
                     oldspeed = speed
                     print(cstr)
                  if (steer != oldsteer):
-                    cstr = "{s"+str(steer)+"}"
+                    cstr = "{s%4d}" % steer
                     spisend(cstr)
                     oldsteer = steer
                     print(cstr)
