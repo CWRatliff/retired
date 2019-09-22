@@ -19,11 +19,11 @@ for i in range(2):
     t0 = test[i][0]
     omega = (test[i][2] - ang) / deltaT
     ang = test[i][2]
-    spd = test[i][1] * spdfactor
+    v = test[i][1] * spdfactor
     omega = np.deg2rad(omega)
     xl = -test[i][3] * lonfeet
     yl = test[i][4] * latfeet
 
-    print (spd, omega, xl, yl)
-    xest = Kfilter.Kalman_step(deltaT, spd, omega, xl, yl)
+    print (v, omega, xl, yl)
+    xest = Kfilter.Kalman_step(deltaT, xl, yl, omega, v)
     print("Kalman new est", xest)

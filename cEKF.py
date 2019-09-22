@@ -22,10 +22,12 @@ class Kalman_filter:
     # x - state vector input output
     # u - [speed, steer]
     def motion_model(self, x, u):
+        print("motion x", x)
+        print("motion u", u)
         F = np.array([[1.0, 0, 0, 0],             # state transition matrix
                       [0, 1.0, 0, 0],
                       [0, 0, 1.0, 0],
-                      [0, 0, 0, 1.0]])
+                      [0, 0, 0, 0]])
         B = np.array([[self.DT * math.cos(u[0, 1]), 0],
                       [self.DT * math.sin(u[0, 1]), 0],
                       [0, self.DT],
@@ -62,7 +64,6 @@ class Kalman_filter:
             [0.0, 1.0, dcosa , self.DT * sina],
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]])
-        print("jacobiF", jF)
         return jF
 
     #observation model Jacobian matrix
