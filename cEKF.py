@@ -91,9 +91,13 @@ class Kalman_filter:
         jH = self.jacobiH()
         zPred = self.observation_model(xPred)
         print("zPred", zPred)
+        print("z", z)
         y = z.T - zPred
+        print("y", y)
         S = jH.dot(pPred).dot(jH.T) + self.Q
+        print("S", S)
         K = pPred.dot(jH.T).dot(np.linalg.inv(S))
+        print("K", K)
         self.xEst = xPred + K.dot(y)
         self.pEst = (np.eye(len(self.xEst)) - K.dot(jH)).dot(pPred)
         return self.xEst
@@ -113,9 +117,10 @@ class Kalman_filter:
     # hdg - radians (x-axis zero)
     # x - x-axis
     # y - y-axis
-    def Kalman_step(self, DelT, x, y, omega, v):
+    def Kalman_step(self, t, x, y, omega, v):
     #    u = (np.array([[speed, hdg]])).T
-        self.DT = DelT
+        self.DT = t - self.t0
+        self.t0 = t
         u = np.array([[v, omega]])
         z = np.array([[x, y]])
         self.xEst = self.Kalman_update(z, u)
