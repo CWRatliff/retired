@@ -6,6 +6,7 @@
 #190802 - U turns
 #190816 - GPS, waypoints
 #190826 - routes, compass corrections
+#190925 - EKF added
 
 '''
 +---------+----------+----------+  +---------+----------+----------+
@@ -47,6 +48,7 @@ import math
 import smbus
 import spidev
 import motor_driver
+import cEKF
 
 #addr = 0x08
 bus = smbus.SMBus(1)
@@ -66,34 +68,19 @@ oldhdg = 500
 auto = False
 azimuth = 0
 compass_adjustment = 257
-#latsec = 0.0
-#lonsec = 0.0
-X_pos = 0.0                            # rover location
-y_pos = 0.0
-x_raw = 0.0
-y_raw = 0.0
-#startlat = 0.0
-#startlon = 0.0
-#clatsec = 0.0
-#clonsec = 0.0
-#oclatsec = 0.0
-#oclonsec = 0.0
-#latcor = 0.0
-#loncor = 0.0
-x_start = 0.0
-y_start = 0.0
-x_delta = 0.0                           # correction to on-board GPS (feet)
-y_delta = 0.0
-x_corr = 0.0                            # on_board GPS with corrections
-y_corr= 0.0
-ox_corr = 0.0
-oy_corr = 0.0
-latitude = math.radians(34.24)          # lat of Camarillo
-latfeet = 6076.0/60.0
+latsec = 0.0
+lonsec = 0.0
+startlat = 0.0
+startlon = 0.0
+clatsec = 0.0                           # corrected lat/lon
+clonsec = 0.0
+oclatsec = 0.0
+oclonsec = 0.0
+latcor = 0.0                            # corrections
+loncor = 0.0
+latitude = math.radians(34.24)          # Camarillo
+latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
-lonshort = math.cos(latitude)
-ftpersec = 6076.0/60
-aftpersec = ftpersec * lonshort
 
 left = False
 left_limit = -36
@@ -132,31 +119,37 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [11,12]]
 
 robot = motor_driver.motor_driver()
-
-print("Rover 1.0 190904")
+Kfilter.cEKF.Kalman_filter()
+print("Rover 1.0 190925")
 
 #===================================================================
 #compute distance from a point to a line
 # dist is + if L1P rotates left into L1L2, else negative
-def pointline(x1, y1, x2, y2, xp0, yp0, llen):
-    dely = y2 - y1
-    delx = x2 - x1
-    dist = abs(dely*xp0 - delx*yp0 + y2*x1 - x2*y1) / llen
+def pointline(la1, lo1, la2, lo2, lap0, lop0, llen):
+    aa1 = la1 * latfeet 
+    ao1 = lo1 * lonfeet
+    aa2 = la2 * latfeet
+    ao2 = lo2 * lonfeet
+    aap0 = lap0 * latfeet
+    aop0 = lop0 * lonfeet
+    dely = aa2 - aa1
+    delx = ao2 - ao1
+    dist = abs(dely*aop0 - delx*aap0 + ao2*aa1 - aa2*ao1) / llen
     return (dist)
 #===================================================================
-#compute distance on flat earth
-def distto(x0, y0, x1, y1):
-    dely = (la1 - la0)
-    delx = (lo0 - lo1)
+#compute distance from lat/lon point to point on flat earth
+def distto(la0, lo0, la1, lo1):
+    dely = (la1 - la0) * latfeet
+    delx = (lo0 - lo1) * lonfeet
     dist = math.sqrt(delx**2 + dely**2)
     return(dist)
 #===================================================================
-#compute angle from point to point on flat earth
-def fromto(x0, y0, x1, y1):
-    delx = x1 - x0
-    dely = y1 - y0
-    ang = math.atan2(dely, delx * lonshort)
-    return((ang)
+#compute angle from lat/lon point to point on flat earth
+def fromto(la0, lo0, la1, lo1):
+    delx = lo0 - lo1            #long is -x direction
+    dely = la1 - la0            #lat is +y
+    ang = math.atan2(dely, delx * math.cos(latitude))
+    return((450 - math.degrees(ang))%360)
 
 #===================================================================
 # progressive steering
@@ -241,10 +234,10 @@ try:
                     try:
                         x = float(cbuff[3:msglen-1])
                         if (xchr == 'T'):
-                            y_delta = x * latfeet
+                            latcor = x
                         elif xchr == 'N':
-                            x_delta = x * lonfeet
-                        print ("L/L corr:"+str(x_delta) + "/"+ str(y_delta))
+                            loncor = x
+                        print ("L/L corr:"+str(latcor) + "/"+ str(loncor))
 
                     except ValueError:
                         print("bad data" + cbuff)
@@ -397,17 +390,20 @@ try:
                             firstwpt = routes[wpt][0]
                             wpt = firstwpt
                         if (wpt >= 10 and wpt <= 24):
-                            y_start = y_corr
-                            x_start = x_corr
-                            y_dest = waypts[wpt][0] * latfeet
-                            x_dest = waypts[wpt][1] * lonfeet
-                            print ("wpt: "+ str(wpt)+','+str(x_dest)+','+str(y_dest))
-                            azimuth = fromto(x_start, y_start, x_dest, y_dest)
-                            wptdist = distto(x_start, y_start, x_dest, y_dest)
+                            startlat = latsec
+                            startlon = lonsec
+                            destlat = waypts[wpt][0]
+                            destlon = waypts[wpt][1]
+                            print ("wpt: "+ str(wpt)+','+str(destlat)+','+str(destlon))
+                            azimuth = fromto(startlat, startlon, destlat, destlon)
+                            wptdist = distto(startlat, startlon, destlat, destlon)
                             auto = True
                             wptflag = True
                             cstr = "{aWp" + str(wpt) + "}"
                             spisend(cstr)
+                            Kfilter.Kalman_start(time.time(), clonsec * lonfeet, \
+                                clatsec * latfeet, math.radians(450-hdg), \
+                                speed * spdfactor)
                     except ValueError:
                         print("bad data" + cbuff)
 
@@ -417,15 +413,15 @@ try:
                     try:
                         x = float(cbuff[3:msglen-1])
                         if (xchr == 'T'):
-                            y_raw = x * latfeet
-                            y_corr = y_raw + y_delta
+                            latsec = x
+                            clatsec = latsec + latcor
                         elif xchr == 'N':
-                            x_raw = x * lonfeet
-                            x_corr = x_raw + x_delta
-                        wstr = "(x, y):%5.3f/%5.3f" % (x_corr, y_corr)
+                            lonsec = x
+                            clonsec = lonsec + loncor
+                        wstr = "Lat/Lon:%5.3f/%5.3f" % (clatsec, clonsec)
                         print (wstr)
                         if wptflag:
-                            nowhdg = fromto(x_corr, y_corr, x_dest, y_dest)
+                            nowhdg = fromto(clatsec, clonsec, destlat, destlon)
                             cstr = "{c%3d}" % nowhdg
                             spisend (cstr)
                             print(cstr)
@@ -434,20 +430,29 @@ try:
                     except ValueError:
                         print("bad data" + cbuff)
                     finally:
-                        if (y_corr != oy_corr):
-                            cstr = "{lt%5.3f}" % y_corr
+                        if (clatsec != oclatsec):
+                            cstr = "{lt%5.3f}" % clatsec
                             spisend(cstr)
-                            oy_corr = y_corr
-                        if (x_corr != ox_corr):
-                            cstr = "{ln%5.3f}" % x_corr
+                            oclatsec = clatsec
+                        if (clonsec != oclonsec):
+                            cstr = "{ln%5.3f}" % clonsec
                             spisend(cstr)
-                            ox_corr = x_corr
+                            oclonsec = clonsec
 
  #======================================================================
                  if (auto):                          #adjust for > 180 turning
                             
                     if wptflag:
-                        dtg = distto(x_corr, y_corr, x_dest, y_dest)
+                        v = speed * spdfactor
+                        alpha = math.radian(steer)
+                        h = d3/math.sin(alpha)
+                        turn = (h * math.cos(alpha) + d1) / 12.0
+                        omega = v /turn
+                        xEst = Kfilter.Kalman_step(time.time(), clonsec * lonfeet, \
+                                clatsec * latfeet, omega, v)
+                        clonsec = xEst[0, 0] / lonfeet
+                        clatsec = xEst[1, 0] / latfeet
+                        dtg = distto(clatsec, clonsec, destlat, destlon)
                         cstr = "{d%5.1f}" % dtg
                         spisend(cstr)
                         print(cstr)
@@ -462,13 +467,15 @@ try:
                                     wptflg = False
                                     rteflag = False
                                     speed = 0
-                                y_start = y_corr         #dup'ed code
-                                x_start = x_corr
-                                y_dest = waypts[wpt][0] * latfeet
-                                x_dest = waypts[wpt][1] * lonfeet
-                                print ("wpt: "+ str(wpt) + ','+str(x_dest)+','+str(y_dest))
-                                azimuth = fromto(x_start, y_start, x_dest, y_dest)
-                                wptdist = distto(x_start, y_start, x_dest, y_dest)
+                                startlat = latsec         #dup'ed code
+                                startlon = lonsec
+                                destlat = waypts[wpt][0]
+                                destlon = waypts[wpt][1]
+                                print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
+                                azimuth = fromto(startlat, startlon,\
+                                    destlat, destlon)
+                                wptdist = distto(startlat, startlon, \
+                                    destlat, destlon)
                                 cstr = "{aWp" + str(wpt) + "}"
                                 spisend(cstr)
 
@@ -478,10 +485,10 @@ try:
                                 wptflag =  False
 
                         if (rteflag or wptflag):
-                            nowhdg = fromto(x_corr, y_corr, x_dest, y_dest)
+                            nowhdg = fromto(clatsec, clonsec, destlat, destlon)
                             angle = nowhdg - azimuth
-                            dst = pointline(x_start, y_start, \
-                                x_dest, y_dest, x_corr, y_corr, wptdist) 
+                            dst = pointline(startlat, startlon, \
+                                destlat, destlon, clatsec, clonsec, wptdist) 
                             if (dst > 3 or angle > 3):
                                 compass_adjustment -= 1
                             if (dst < -3 or angle < -3):
