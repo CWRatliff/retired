@@ -13,7 +13,7 @@
   NEO-M8P RTK: https://www.sparkfun.com/products/15005
   SAM-M8Q: https://www.sparkfun.com/products/15106
 */
-
+#include <math.h>
 #include <Wire.h> //Needed for I2C to GPS
 #include "Adafruit_LiquidCrystal.h"
 
@@ -24,8 +24,8 @@ Adafruit_LiquidCrystal lcd(0);
 
 long lastTime = 0; //Simple local timer. Limits amount if I2C traffic to Ublox module.
 // from multiday avg 190610
-double lathome = 20.2477;
-double longhome = 6.4108;
+double lathome = 20.221;
+double longhome = 6.326;
 
 //===================================================================
 void setup()
@@ -52,6 +52,8 @@ void setup()
 //====================================================================
 void loop()
 {
+  double gspeed;
+  long hdg;
   double trash;
   char    buff[30];
   
@@ -67,8 +69,15 @@ void loop()
     long longitude = myGPS.getLongitude();
     Serial.write(" Long: ");
     Serial.print(longitude);
-    Serial.write(" (deg)");
 
+    long gspeed = myGPS.getGroundSpeed();     //Returns speed in mm/s
+    Serial.write(" Spd: ");
+    Serial.print(gspeed);  
+    
+    long hdg =  myGPS.getHeading();       //Returns heading in degrees * 10^-7
+    Serial.write(" hdg: ");
+    Serial.print(hdg);
+    
     long altitude = myGPS.getAltitude();
     Serial.write(" Alt: ");
     Serial.print(altitude);
@@ -78,51 +87,55 @@ void loop()
     Serial.write(" SIV: ");
     Serial.print(SIV);
 
-    long acc = myGPS.getPositionAccuracy();
+    long acc = myGPS.getHorizontalAccuracy();
     Serial.write(" acc: ");
     Serial.print(acc);
+    lcd.setCursor(12, 3);
+    lcd.print(acc);
 
-    double latdeg = (double)latitude / 10000000.0;;
-    Serial.print(" lat:");
-   Serial.print(latdeg);
-    double latmin = modf(latdeg, &trash);
-   Serial.print(" miin:");
-   Serial.print(latmin);
-    double latsec = modf(latmin * 60, &trash);
-    latsec *= 60;
-   Serial.print(" sec:");
-   Serial.print(latsec);
-    double londeg = (double)longitude / 10000000.0;
-    double lonmin = modf(londeg, &trash);
-    double lonsec = modf(lonmin * 60, &trash);
-    lonsec *= 60;
-    lonsec = fabs(lonsec);
+    long llatsec = (latitude - 342333333) * 36;
+    double latsec = (double)llatsec / 100000.0;
+    long llongsec = (longitude + 1190666666) * 36;  // long will be minus
+    double lonsec = (double)llongsec / 100000.0;
 
-    float latdel = lathome - latsec;
-    float londel = longhome - lonsec;
-
+    double latdel = lathome - latsec;
+    double londel = lonsec + longhome;       // long increases westward
+    Serial.write("dels");
+    Serial.print(llongsec);
+    Serial.print(lonsec);
+    Serial.print(londel);
     Serial.println();
 
     char  latstr[10];
     char  lonstr[10];
-    dtostrf(latsec, 7, 4, latstr);
-    lcd.setCursor(0, 0);
-    lcd.print(latstr);
     dtostrf(latdel, 7, 4, latstr);
-    sprintf(buff, "{Ca%s}", latstr) ;
+    sprintf(buff, "{CT%s}", latstr) ;
     Serial.write(buff);
     Serial1.write(buff);
     lcd.setCursor(0, 1);
     lcd.print(buff);
 
-    dtostrf(lonsec, 7, 4, lonstr);
-    lcd.setCursor(0,2);
-    lcd.print(lonstr);
     dtostrf(londel, 6, 4, lonstr);
-    sprintf(buff, "{Co%s}", lonstr) ;
+    sprintf(buff, "{CN%s}", lonstr) ;
     Serial.write(buff);
     Serial1.write(buff);
     lcd.setCursor(0, 3);
     lcd.print(buff);
+
+//    dtostrf(gspeed, 7, 3, buff)
+//    lcd.setCursor(10, 0);
+//    lcd.print(buff);
+//    double dhdg = (double)hdg / 100000.0;
+//    double fdeg = modf(dhdg, &trash);
+    lcd.setCursor(10, 2);
+    lcd.print(hdg/100000.0);
+
+    double chdr = atan2(-latdel, -londel*cos(34.14*M_PI/180));
+    chdr = chdr * 180/M_PI;
+    chdr = (450 - chdr);
+    if (chdr > 360)
+      chdr -= 360;;
+    lcd.setCursor(13, 1);
+    lcd.print(chdr);
   }
 }
