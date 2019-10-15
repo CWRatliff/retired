@@ -81,6 +81,9 @@ loncor = 0.0
 latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
+spdfactor = .0035
+d1 = 7.254
+d3 = 10.5
 
 left = False
 left_limit = -36
@@ -119,8 +122,8 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [11,12]]
 
 robot = motor_driver.motor_driver()
-Kfilter.cEKF.Kalman_filter()
-print("Rover 1.0 190925")
+Kfilter = cEKF.Kalman_filter()
+print("Rover 1.0 191015")
 
 #===================================================================
 #compute distance from a point to a line
@@ -444,7 +447,7 @@ try:
                             
                     if wptflag:
                         v = speed * spdfactor
-                        alpha = math.radian(steer)
+                        alpha = math.radians(steer)
                         h = d3/math.sin(alpha)
                         turn = (h * math.cos(alpha) + d1) / 12.0
                         omega = v /turn
