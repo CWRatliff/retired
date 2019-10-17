@@ -101,7 +101,7 @@ class App:
         data.place(x=20,y=20)
 #        data.grid(row=0,column=0)
 #        keypad.grid(row=0,column=1)
-        keypad.place(x=720,y=10)
+        keypad.place(x=380,y=10)
         
     def star_button(self):
         self.status.set("Auto")
@@ -115,6 +115,6 @@ class App:
 root = Tk()
 root.wm_title('Temp Converter')
 app = App(root)
-root.geometry("1024x600+0+0")
+root.geometry("650x600+0+0")
 root.mainloop()
 
