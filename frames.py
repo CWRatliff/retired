@@ -1,9 +1,17 @@
 #07_04_temp_final.py
 
 from tkinter import *
+import serial
 
-#from converters import *
+ser = serial.Serial(port='/dev/ttyS0',
+    baudrate=9600,
+    parity=serial.PARITY_NONE,
+    stopbits=serial.STOPBITS_ONE,
+    bytesize=serial.EIGHTBITS,
+    timeout=1
+    )
 
+       
 class App:
     
     def __init__(self, master):
@@ -25,11 +33,11 @@ class App:
         xte.grid(row=6,column=0)
         lat=Label(data,text="Lat:", font=(None,20))
         lat.grid(row=7,column=0)
-        lon=Label(data,text="Lon:", font=(None,20))
+        lon=Label(data,text="Lon:", font=(None,16))
         lon.grid(row=8,column=0)
 
         self.status = StringVar()
-        Label(data,width=12,font=(None,20),bg="white",fg="blue",borderwidth=1,relief="solid",textvariable=self.status).grid(row=0,column=1)
+        Label(data,width=8,font=(None,20),bg="white",fg="blue",borderwidth=1,relief="solid",textvariable=self.status).grid(row=0,column=1)
         self.speed = StringVar()
         Label(data,width=12,font=(None,20),bg="white",fg="blue",borderwidth=1,relief="solid",textvariable=self.speed).grid(row=1,column=1)
         self.head = StringVar()
@@ -45,7 +53,7 @@ class App:
         self.lat = StringVar()
         Label(data,width=12,font=(None,20),bg="white",fg="blue",borderwidth=1,relief="solid",textvariable=self.lat).grid(row=7,column=1)
         self.lon= StringVar()
-        Label(data, width=12,font=(None,20),bg="white",fg="blue",borderwidth=1,relief="solid",textvariable=self.lon).grid(row=8,column=1)
+        Label(data, width=8,font=(None,16),bg="white",fg="blue",borderwidth=1,relief="solid",textvariable=self.lon).grid(row=8,column=1)
 
         
         keypad=Frame(master)
@@ -103,18 +111,52 @@ class App:
 #        keypad.grid(row=0,column=1)
         keypad.place(x=380,y=10)
         
+        self.input = ""
+        self.exeflag = False
+        self.lbflag = False
+        self.piflag = False
+        
     def star_button(self):
+        exeflag = True
         self.status.set("Auto")
-        self.speed.set("100")
         self.steer.set("-16")
         self.xte.set("3.45")
         self.lat.set("20.1255")
         self.lon.set("6.732")
-        
+
+#   Listen to serial port for status info from rover pi
+    def listen(self):
+        while ser.in_waiting:
+            inpt = ser.read(1)
+            print(inpt)
+            if (inpt == '{'):
+                self.ihead = 0
+                continue
+            if (inpt == '}'):
+                self.piflag = True
+                break;
+            self.ibuffer = self.ibuffer + inpt
+
+           
+        if self.piflag:
+            xchar = self.ibuffer[0]
+            self.ibuffer += self.ibuffer[1:]
+            if (xchar == 'v'):
+                self.speed.set(self.ibuffer)
+                    
+            if (xchar == 'd'):
+                self.dtg.set(self.ibuffer)
+                    
+            self.piflag = False
+                        
+        root.after(25, self.listen)
+  
         
 root = Tk()
 root.wm_title('Temp Converter')
 app = App(root)
 root.geometry("650x600+0+0")
+root.after(25, app.listen)
+
 root.mainloop()
 
