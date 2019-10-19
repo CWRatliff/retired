@@ -35,7 +35,7 @@ s - steering angle
 v - speed
 
 Received codes
-C - GPS corrections
+#C - GPS corrections
 D - one digit commands
 E - 'star' commnds
 F - 'pound' commands
@@ -106,7 +106,7 @@ wptflag = False
 waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.678, 9.399],                    #10 open area near main gate
 [20.808, 7.730, "speed bump"],      #11 mid speed bump
-[20.641, 7.396],                    #12 center parking 'T' seam
+[20.641, 7.396, "T seam"],          #12 center parking 'T' seam
 [20.945, 6.375, "gar door"],        #13
 [20.987, 6.066, "driveway center"], #14
 [20.830, 5.945, "gravel"],          #15
@@ -231,7 +231,7 @@ try:
     #        print(xchr)
                
             if (xchr >= 'A') and (xchr <= 'Z'):
-
+'''
                  if (xchr == 'C'):               #lat/long corrections
                     xchr = cbuff[2]
                     try:
@@ -244,7 +244,7 @@ try:
 
                     except ValueError:
                         print("bad data" + cbuff)
-
+'''
 #======================================================================
 # single digit keypad commands
                  if (xchr == 'D'):                            
@@ -405,7 +405,7 @@ try:
                             cstr = "{aWp" + str(wpt) + "}"
                             spisend(cstr)
                             Kfilter.Kalman_start(time.time(), clonsec * lonfeet, \
-                                clatsec * latfeet, math.radians(450-hdg), \
+                                clatsec * latfeet, (math.radians(450-hdg) % 360), \
                                 speed * spdfactor)
                     except ValueError:
                         print("bad data" + cbuff)
@@ -447,10 +447,13 @@ try:
                             
                     if wptflag:
                         v = speed * spdfactor
-                        alpha = math.radians(steer)
-                        h = d3/math.sin(alpha)
-                        turn = (h * math.cos(alpha) + d1) / 12.0
-                        omega = v /turn
+                        if (steer = 0):
+                            omega = 0
+                        else:
+                            alpha = math.radians(steer)
+                            h = d3/math.sin(alpha)
+                            turn = (h * math.cos(alpha) + d1) / 12.0
+                            omega = v /turn
                         xEst = Kfilter.Kalman_step(time.time(), clonsec * lonfeet, \
                                 clatsec * latfeet, omega, v)
                         clonsec = xEst[0, 0] / lonfeet
