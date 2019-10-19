@@ -5,7 +5,7 @@ with state vector {x, y, speed, heading}
 '''
 import math
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 class Kalman_filter:
@@ -125,4 +125,3 @@ class Kalman_filter:
         z = np.array([[x, y]])
         self.xEst = self.Kalman_update(z, u)
         return self.xEst
-
