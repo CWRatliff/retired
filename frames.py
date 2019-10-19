@@ -15,7 +15,6 @@ ser = serial.Serial(port='/dev/ttyS0',
 class App:
     
     def __init__(self, master):
-#        self.t_conv = ScaleAndOffsetConverter('C', 'F', 1.8, 32)
         data = Frame(master)
         sta=Label(data,text="Status: ", font=(None,20))
         sta.grid(row=0,column=0)
@@ -93,13 +92,13 @@ class App:
         bC=Button(keypad, text="C")
         bC.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
         bC.grid(row=2,column=3)
-        bS=Button(keypad, text="*", command=self.star_button)
+        bS=Button(keypad, text="*", command=self.star)
         bS.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
         bS.grid(row=3,column=0)
-        b0=Button(keypad, text="0")
+        b0=Button(keypad, text="0", command=self.zero)
         b0.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
         b0.grid(row=3,column=1)
-        bp=Button(keypad, text="#")
+        bp=Button(keypad, text="#", command=self.pound)
         bp.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
         bp.grid(row=3,column=2)
         bD=Button(keypad, text="D")
@@ -118,7 +117,8 @@ class App:
         self.lb2flag = False
         self.piflag = False
         
-    def star_button(self):
+# keypad button actions
+    def star(self):
         self.exeflag = True
         self.status.set("Auto")
         self.steer.set("-16")
@@ -163,11 +163,13 @@ class App:
         if (self.exeflag):
             self.msg = '{E' + self.key + '}'
             ser.write(self.msg.encode('utf-8'))
+            self.msg = ""
             self.exeflag = False
         elif (self.lbflag):
             if (self.lb2flag):
-                self.msg = self.msg + self.key + '}'
+                msg = self.msg + self.key + '}'
                 ser.write(msg.encode('utf-8'))
+                self.msg = ""
                 self.lbflag = False
                 self.lb2flag = False
             else:
@@ -176,13 +178,12 @@ class App:
         else:
             self.msg = '{D' + self.key + '}'
             ser.write(self.msg.encode('utf-8'))
-        self.msg = ""
+            self.msg = ""
 
 #   Listen to serial port for status info from rover pi
     def listen(self):
         while ser.in_waiting:
             inpt = ser.read(1).decode("utf-8")
-            print(inpt)
             if (inpt == '{'):
                 self.ihead = 0
                 continue
@@ -193,35 +194,41 @@ class App:
 
            
         if self.piflag:
-            xchar = self.ibuffer[0]
-            lbuffer = self.ibuffer[1:]
-            
-            if (xchar == 'a'):
-                self.status.set(lbuffer)
-                    
-            elif (xchar == 'c'):
-                self.ctg.set(lbuffer)
-                    
-            elif (xchar == 'd'):
-                self.dtg.set(lbuffer)
-                    
-            elif (xchar == 'h'):
-                self.head.set(lbuffer)
-                    
-            elif (xchar == 'l'):
-                self.lat.set(lbuffer)
-                    
-            elif (xchar == 'n'):
-                self.lon.set(lbuffer)
-                    
-            elif (xchar == 's'):
-                self.steer.set(lbuffer)
-                    
-            elif (xchar == 'v'):
-                self.speed.set(lbuffer)
+            if (len(self.ibuffer) >= 3):
+                
+                print(self.ibuffer)
+                xchar = self.ibuffer[0]
+                lbuffer = self.ibuffer[1:]
+                
+                if (xchar == 'a'):
+                    self.status.set(lbuffer)
+                        
+                elif (xchar == 'c'):
+                    self.ctg.set(lbuffer)
+                        
+                elif (xchar == 'd'):
+                    self.dtg.set(lbuffer)
+                        
+                elif (xchar == 'h'):
+                    self.head.set(lbuffer)
+                        
+                elif (xchar == 'l'):
+                    xchar = lbuffer[0]
+                    lbuffer = self.ibuffer[2:]
+                    if (xchar == 't'):
+                        self.lat.set(lbuffer)
+                    else:  # (xchar == 'n'):
+                        self.lon.set(lbuffer)
+                        
+                elif (xchar == 's'):
+                    self.steer.set(lbuffer)
+                        
+                elif (xchar == 'v'):
+                    self.speed.set(lbuffer)
  
             self.piflag = False
-                        
+ 
+        self.ibuffer = "" 
         root.after(25, self.listen)
   
         
