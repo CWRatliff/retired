@@ -89,7 +89,7 @@ left = False
 left_limit = -36
 right_limit = 36
 epoch = time.time()
-wstr = ""
+#wstr = ""
 cbuff = ""
 flag = False
 
@@ -223,6 +223,7 @@ try:
             msglen = len(cbuff)
             if (msglen < 3 or cbuff[0] != '{'):
                 cbuff = ""
+                flag= False
                 continue
             xchr = cbuff[1]    
             if (xchr == '*'):                   #ping
@@ -231,7 +232,7 @@ try:
     #        print(xchr)
                
             if (xchr >= 'A') and (xchr <= 'Z'):
-'''
+
                  if (xchr == 'C'):               #lat/long corrections
                     xchr = cbuff[2]
                     try:
@@ -244,7 +245,7 @@ try:
 
                     except ValueError:
                         print("bad data" + cbuff)
-'''
+
 #======================================================================
 # single digit keypad commands
                  if (xchr == 'D'):                            
@@ -447,7 +448,7 @@ try:
                             
                     if wptflag:
                         v = speed * spdfactor
-                        if (steer = 0):
+                        if (steer == 0):
                             omega = 0
                         else:
                             alpha = math.radians(steer)
@@ -458,6 +459,9 @@ try:
                                 clatsec * latfeet, omega, v)
                         clonsec = xEst[0, 0] / lonfeet
                         clatsec = xEst[1, 0] / latfeet
+                        print("filtered L/L:",clatsec, "/",clonsec)
+                        print("Filtered hdg: ",xEst[2,0])
+                        print("Filtered speed: ",xEst[3,0])
                         dtg = distto(clatsec, clonsec, destlat, destlon)
                         cstr = "{d%5.1f}" % dtg
                         spisend(cstr)
