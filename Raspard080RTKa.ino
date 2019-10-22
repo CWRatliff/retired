@@ -1,4 +1,5 @@
 //190823 - added '.'s to msgs - seems to be SPI timing need
+//191019 - revised lat/long arithmetic to avoid rounding loss of accuracy
 #include <SPI.h>
 #include <Wire.h>
 #include "SparkFun_BNO080_Arduino_Library.h"
@@ -17,7 +18,7 @@ char    obuffer[256];              // traffic from Pi to controller
 volatile int otail = 0;
 volatile int ohead = 0;
 char    str[25];
-volatile int prox;
+
 int     oldhdg = 0;
 double  olatsec = 0.0;
 double  olonsec = 0.0;
@@ -28,14 +29,14 @@ int     sectimer = 0;
 //==========================================================================================
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(9600);
-  pinMode(MISO, OUTPUT);
+  Serial1.begin(9600);        // XBee
+  pinMode(MISO, OUTPUT);      // SPI
   SPCR |= _BV(SPE);           // set to slave mode
   SPI.attachInterrupt();
 
   Wire.begin();
   myIMU.begin();
-  myIMU.enableRotationVector(50); //Send data update every 450ms
+  myIMU.enableRotationVector(450); //Send data update every 450ms
   myGPS.begin();
   myGPS.setI2COutput(COM_TYPE_UBX); //Set the I2C port to output UBX only (turn off NMEA noise)
   myGPS.saveConfiguration(); //Save the current settings to flash and BBR
@@ -59,46 +60,48 @@ ISR (SPI_STC_vect) {
 void loop() {
   char* p;
   char  xchr;
-    float qx;
-    float qy;
-    float qz;
-    float qw;
-    float quatRadianAccuracy;
-    double sinr_cosp;
-    double cosr_cosp;
-    double roll;
-    double sinp;
-    double pitch;
-    double siny_cosp;
-    double cosy_cosp;  
-    double yaw;
-    double trash;
-    int hdg;
-    
-    // read Xbee input and upload to Pi
-    while (Serial1.available()) {
-      xchr = Serial1.read();
+  float qx;
+  float qy;
+  float qz;
+  float qw;
+  float quatRadianAccuracy;
+  double sinr_cosp;
+  double cosr_cosp;
+  double roll;
+  double sinp;
+  double pitch;
+  double siny_cosp;
+  double cosy_cosp;  
+  double yaw;
+  double trash;
+  int hdg;
+  
+  // read Xbee input and upload to Pi
+  while (Serial1.available()) {
+    xchr = Serial1.read();
 //      Serial.println(xchr);
-      ibuffer[ihead++] = xchr;
+    ibuffer[ihead++] = xchr;
+    ihead &= MASK;
+    if (xchr == '}') {
+      ibuffer[ihead++] = 0;
       ihead &= MASK;
-      if (xchr == '}') {
-        ibuffer[ihead++] = 0;
-        ihead &= MASK;
-        break;
-        }
+      break;
       }
+    }
       
-    // if any data waiting in output buffer, transmit via Xbee    
-    while (ohead != otail) {
-      if (Serial1.availableForWrite()) {
-        Serial.write(obuffer[otail]);
-        Serial1.write(obuffer[otail++]);
-        otail &= MASK;
-        }
-      else
-        break;
+  // if any data waiting in output buffer, transmit via Xbee    
+  while (ohead != otail) {
+    if (Serial1.availableForWrite()) {
+      Serial.write(obuffer[otail]);
+      Serial1.write(obuffer[otail++]);
+      otail &= MASK;
       }
-    
+    else {
+      Serial.println("buffer");
+      break;
+      }
+    } // endwhile
+
   if (myIMU.dataAvailable() == true) {
     qx = myIMU.getQuatI();
     qy = myIMU.getQuatJ();
@@ -149,11 +152,7 @@ void loop() {
           ibuffer[ihead++] = *p;
           ihead &= MASK;
           }
-//        Serial.print(str);
-//        sprintf(str, "  {old%d}..", oldhdg);
-//        Serial.print(str);
         oldhdg = hdg;
-//        sprintf(str, "  {old%d}..", oldhdg);
         Serial.println(str);
         }
       }
@@ -166,7 +165,7 @@ void loop() {
       Serial.print(roll*180.0/M_PI, 2);
       Serial.println(str);
 */
-      epoch = millis();
+    epoch = millis();
 
     long latitude = myGPS.getLatitude();
     long longitude = myGPS.getLongitude();
@@ -181,13 +180,11 @@ void loop() {
     // assumes long = 119 deg, 4 min
     long llongsec = (longitude + 1190666666) * 36;  // long will be minus
     double lonsec = (double)llongsec / 100000.0;
-//    float latdel = latsec + latcor;
-//    float londel = lonsec + loncor;       // long increases westward
 
     lonsec = fabs(lonsec);
     latsec = fabs(latsec);
     if (latsec != olatsec || sectimer > 9) {
-      char latstr[10];
+      char latstr[15];
       dtostrf(latsec, 7, 4, latstr);
       sprintf(str, "{LT%s}....", latstr);
       Serial.println(str);
@@ -198,7 +195,7 @@ void loop() {
       olatsec = latsec;
       }
     if (lonsec != olonsec || sectimer > 9) {
-      char lonstr[10];
+      char lonstr[15];
       dtostrf(lonsec, 6, 4, lonstr);
       sprintf(str, "{LN%s}....", lonstr);
       Serial.println(str);
@@ -209,6 +206,6 @@ void loop() {
       olonsec = lonsec;
       }
     }
-    if (sectimer > 9)
-      sectimer = 0;
+  if (sectimer > 9)
+    sectimer = 0;
   } 
