@@ -49,7 +49,6 @@ import spidev
 import motor_driver
 import cEKF
 
-#addr = 0x08
 bus = smbus.SMBus(1)
 spi = spidev.SpiDev()
 rc = spi.open(0, 0)
@@ -181,7 +180,7 @@ cstr = "{c----}"
 spisend(cstr)
 
 try:
-    while True:
+    while True:             #######  main loop    #######
 
         while True:                         # read characters from slave
             c = spi.xfer(NUL)
@@ -199,7 +198,7 @@ try:
                 ts=time.strftime("%H:%M:%S ", tt)
                 print("msg: " + ts + cbuff)
                 break
-            #endwhile
+            #endwhile read
 
 #========================================================================
         if (flag):                          # flag means we got a command
@@ -209,25 +208,8 @@ try:
                 flag= False
                 continue
             xchr = cbuff[1]    
-            if (xchr == '*'):                   #ping
-    #           print("ping")
-                epoch = time.time()
-    #        print(xchr)
                
             if (xchr >= 'A') and (xchr <= 'Z'):
-
-                 if (xchr == 'C'):               #lat/long corrections
-                    xchr = cbuff[2]
-                    try:
-                        x = float(cbuff[3:msglen-1])
-                        if (xchr == 'T'):
-                            latcor = x
-                        elif xchr == 'N':
-                            loncor = x
-                        print ("L/L corr:"+str(latcor) + "/"+ str(loncor))
-
-                    except ValueError:
-                        print("bad data" + cbuff)
 
 #======================================================================
 # single digit keypad commands
@@ -356,6 +338,7 @@ try:
                         wpt = int(cbuff[2:4])
                         if wpt == 0:
                             wptflag = False
+                            rteflag = False
                             auto = False
                             cstr = "{aStby}"
                             spisend(cstr)
@@ -374,8 +357,8 @@ try:
                             firstwpt = routes[wpt][0]
                             wpt = firstwpt
                         if (wpt >= 10 and wpt <= 24):
-                            startlat = latsec
-                            startlon = lonsec
+                            startlat = ilatsec
+                            startlon = ilonsec
                             destlat = waypts[wpt][0]
                             destlon = waypts[wpt][1]
                             print ("wpt: "+ str(wpt)+','+str(destlat)+','+str(destlon))
@@ -385,14 +368,14 @@ try:
                             wptflag = True
                             cstr = "{aWp" + str(wpt) + "}"
                             spisend(cstr)
-                            Kfilter.Kalman_start(time.time(), clonsec * lonfeet, \
-                                clatsec * latfeet, (math.radians(450-hdg) % 360), \
+                            Kfilter.Kalman_start(time.time(), ilonsec * lonfeet, \
+                                ilatsec * latfeet, (math.radians(450-hdg) % 360), \
                                 speed * spdfactor)
                     except ValueError:
                         print("bad data" + cbuff)
 
 #======================================================================
-                 elif xchr == 'L':                   #lat/long input
+                 elif xchr == 'L':                   #lat/long input from GPS h/w
                     xchr = cbuff[2]
                     try:
                         x = float(cbuff[3:msglen-1])
@@ -406,8 +389,11 @@ try:
                     finally:
                         pass
  #======================================================================
-                 if (auto):                          #adjust for > 180 turning
-                            
+                 if (auto):
+                     
+                    if (time.time < (epoch + 1)):
+                        epoch = time.time()
+                        continue
                     if wptflag:
                         v = speed * spdfactor
                         if (steer == 0):
@@ -417,21 +403,20 @@ try:
                             h = d3/math.sin(alpha)
                             turn = (h * math.cos(alpha) + d1) / 12.0
                             omega = v /turn
-                        xEst = Kfilter.Kalman_step(time.time(), clonsec * lonfeet, \
-                                clatsec * latfeet, omega, v)
+                        xEst = Kfilter.Kalman_step(time.time(), ilonsec * lonfeet, \
+                                ilatsec * latfeet, omega, v)
                         flonsec = xEst[0, 0] / lonfeet
                         flatsec = xEst[1, 0] / latfeet
                         fhdg= (450 - math.degrees(xEst[2,0]))%360
                         print("filtered L/L:",flatsec, "/",flonsec)
                         print("Filtered hdg: ", fhdg)
-                        print("Filtered speed: ",xEst[3,0])
+                        print("Filtered speed: ",xEst[3,0] / spdfactor)
                         dtg = distto(flatsec, flonsec, destlat, destlon)
                         cstr = "{d%5.1f}" % dtg
                         spisend(cstr)
                         print(cstr)
-                        
 
-                        cstr = "{lt%5.3f}" % flatsec
+                        cstr = "{lt%5.3f}" % flatsec    #send to controller
                         spisend(cstr)
                         cstr = "{ln%5.3f}" % flonsec
                         spisend(cstr)
@@ -472,6 +457,8 @@ try:
                                 compass_adjustment -= 1
                             if (dst < -3 or angle < -3):
                                 compass_adjustment += 1
+                        #end if auto
+                                
                     steer = int(azimuth - hdg)
                     if (steer < -180):
                         steer = steer + 360
@@ -501,15 +488,9 @@ try:
                     print(cstr)
 
                  epoch = time.time()
-                 #end if =======================
+                 #end if flag =======================
 
-            if (time.time() > (epoch + 1.1)):
-        #        print(time.time(),5)
-        #        print(epoch,5)
-        #        robot.stop_all()
-                speed = 0;
-                
-            # end loop ========================
+            # end main loop ========================
         flag = False
         cbuff = ""
         #end if flag
