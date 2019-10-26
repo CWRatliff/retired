@@ -20,9 +20,6 @@ volatile int ohead = 0;
 char    str[25];
 
 int     oldhdg = 0;
-double  olatsec = 0.0;
-double  olonsec = 0.0;
-int     sectimer = 0;
 
 #define MASK 0xff
 
@@ -102,59 +99,58 @@ void loop() {
       }
     } // endwhile
 
-  if (myIMU.dataAvailable() == true) {
-    qx = myIMU.getQuatI();
-    qy = myIMU.getQuatJ();
-    qz = myIMU.getQuatK();
-    qw = myIMU.getQuatReal();
-//    quatRadianAccuracy = myIMU.getQuatRadianAccuracy();
-/*
-    Serial.print(qx, 3);
-    Serial.print(F(","));
-    Serial.print(qy, 3);
-    Serial.print(F(","));
-    Serial.print(qz, 3);
-    Serial.print(F(","));
-    Serial.print(qw, 3);
-    Serial.print(F(","));
-//    Serial.print(quatRadianAccuracy, 2);
-    Serial.println();
-*/  
-    // convert quaternian to Euler angles
-    // roll (x-axis rotation)
-    sinr_cosp = +2.0 * (qw * qx + qy * qz);
-    cosr_cosp = +1.0 - 2.0 * (qx * qx + qy * qy);
-    roll = atan2(sinr_cosp, cosr_cosp);
-  
-    // pitch (y-axis rotation)
-    sinp = +2.0 * (qw * qy - qz * qx);
-    if (fabs(sinp) >= 1)
-      pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
-    else
-      pitch = asin(sinp);
-  
-    // yaw (z-axis rotation)
-    siny_cosp = +2.0 * (qw * qz + qx * qy);
-    cosy_cosp  = +1.0 - 2.0 * (qy * qy + qz * qz);  
-    yaw = atan2(siny_cosp, cosy_cosp) * 180/M_PI;
-   
-//      Serial.println();
-//      delay(400);
-    // compose 'O'rientation msg for Pi
-    if ((millis() - epoch) > 1000) {
-      sectimer++;
+  if ((millis() - epoch) > 1000) {
+    epoch = millis();
+    
+    if (myIMU.dataAvailable() == true) {
+      qx = myIMU.getQuatI();
+      qy = myIMU.getQuatJ();
+      qz = myIMU.getQuatK();
+      qw = myIMU.getQuatReal();
+  //    quatRadianAccuracy = myIMU.getQuatRadianAccuracy();
+  /*
+      Serial.print(qx, 3);
+      Serial.print(F(","));
+      Serial.print(qy, 3);
+      Serial.print(F(","));
+      Serial.print(qz, 3);
+      Serial.print(F(","));
+      Serial.print(qw, 3);
+      Serial.print(F(","));
+  //    Serial.print(quatRadianAccuracy, 2);
+      Serial.println();
+  */  
+      // convert quaternian to Euler angles
+      // roll (x-axis rotation)
+      sinr_cosp = +2.0 * (qw * qx + qy * qz);
+      cosr_cosp = +1.0 - 2.0 * (qx * qx + qy * qy);
+      roll = atan2(sinr_cosp, cosr_cosp);
+    
+      // pitch (y-axis rotation)
+      sinp = +2.0 * (qw * qy - qz * qx);
+      if (fabs(sinp) >= 1)
+        pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+      else
+        pitch = asin(sinp);
+    
+      // yaw (z-axis rotation)
+      siny_cosp = +2.0 * (qw * qz + qx * qy);
+      cosy_cosp  = +1.0 - 2.0 * (qy * qy + qz * qz);  
+      yaw = atan2(siny_cosp, cosy_cosp) * 180/M_PI;
+
+      // compose 'O'rientation msg for Pi
       hdg = 450 - yaw;                  // cvt math CCW x-axis to azimuth
       hdg = hdg % 360;
+      }
 
-      if (hdg != oldhdg) {
-        sprintf(str, "{O%d}..", hdg);
-        for (char *p = &str[0]; *p; p++) {
-          ibuffer[ihead++] = *p;
-          ihead &= MASK;
-          }
-        oldhdg = hdg;
-        Serial.println(str);
+    if (hdg != oldhdg) {
+      sprintf(str, "{O%d}..", hdg);
+      for (char *p = &str[0]; *p; p++) {
+        ibuffer[ihead++] = *p;
+        ihead &= MASK;
         }
+      oldhdg = hdg;
+      Serial.println(str);
       }
 /*
       Serial.print("yaw:");
@@ -165,7 +161,7 @@ void loop() {
       Serial.print(roll*180.0/M_PI, 2);
       Serial.println(str);
 */
-    epoch = millis();
+
 
     long latitude = myGPS.getLatitude();
     long longitude = myGPS.getLongitude();
@@ -183,29 +179,23 @@ void loop() {
 
     lonsec = fabs(lonsec);
     latsec = fabs(latsec);
-    if (latsec != olatsec || sectimer > 9) {
-      char latstr[15];
-      dtostrf(latsec, 7, 4, latstr);
-      sprintf(str, "{LT%s}....", latstr);
-      Serial.println(str);
-      for (char *p = &str[0]; *p; p++) {
-         ibuffer[ihead++] = *p;
-         ihead &= MASK;
-         }
-      olatsec = latsec;
-      }
-    if (lonsec != olonsec || sectimer > 9) {
-      char lonstr[15];
-      dtostrf(lonsec, 6, 4, lonstr);
-      sprintf(str, "{LN%s}....", lonstr);
-      Serial.println(str);
-      for (char *p = &str[0]; *p; p++) {
-         ibuffer[ihead++] = *p;
-         ihead &= MASK;
-         }
-      olonsec = lonsec;
-      }
+
+    char latstr[15];
+    dtostrf(latsec, 7, 4, latstr);
+    sprintf(str, "{LT%s}....", latstr);
+    Serial.println(str);
+    for (char *p = &str[0]; *p; p++) {
+       ibuffer[ihead++] = *p;
+       ihead &= MASK;
+       }
+
+    char lonstr[15];
+    dtostrf(lonsec, 6, 4, lonstr);
+    sprintf(str, "{LN%s}....", lonstr);
+    Serial.println(str);
+    for (char *p = &str[0]; *p; p++) {
+       ibuffer[ihead++] = *p;
+       ihead &= MASK;
+       }
     }
-  if (sectimer > 9)
-    sectimer = 0;
   } 
