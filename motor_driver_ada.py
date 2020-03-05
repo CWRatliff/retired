@@ -22,7 +22,7 @@ class motor_driver:
 #        self.br_motor = servo.Servo(self.pca.channels[0], actuation_range=119, min_pulse=700, max_pulse=2300)
 #        self.fr_motor = servo.Servo(self.pca.channels[1], actuation_range=119, min_pulse=700, max_pulse=2300)
 #        self.fl_motor = servo.Servo(self.pca.channels[2], actuation_range=119, min_pulse=700, max_pulse=2300)
-        self.bl_motor = servo.Servo(self.pca.channels[3], actuation_range=119, min_pulse=700, max_pulse=2300)
+#        self.bl_motor = servo.Servo(self.pca.channels[3], actuation_range=119, min_pulse=700, max_pulse=2300)
         self.br_motor = kit.servo[0]
         self.fr_motor = kit.servo[1]
         self.fl_motor = kit.servo[2]
