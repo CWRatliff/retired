@@ -2,6 +2,8 @@
 //191019 - revised lat/long arithmetic to avoid rounding loss of accuracy
 //200216 - defined lat/long biases for ease of location change
 
+#define FALSE 0
+#define TRUE 1
 //#define LTBIAS  342333333     // VdM 34d 14m
 //#define LNBIAS  1190666666    // 119d 4m
 #define LTBIAS 342166666   // Aven Navidad 34d 13m
@@ -17,6 +19,9 @@ BNO080 myIMU;
 
 unsigned long epoch;
 char    str[25];
+byte    rtcm[100];
+int     rtcmflag = FALSE;
+int     rtcmi = 0;
 
 int     oldhdg = 0;
 
@@ -64,6 +69,20 @@ void loop() {
     if (xchr == '}') {
       Serial.println();
       break;
+      }
+    if (xchr == '<') {
+      rtcmi = 0;
+      rtcmflag = TRUE;
+      break;
+      }
+    if (rtcmflag) {
+      if (xchr == '>') {
+        Serial3.write(rtcm, rtcmi);
+        rtcmflag = FALSE;
+        break;
+        }
+      else 
+        rtcm[rtcmi++] = xchr;
       }
     }
 
@@ -165,6 +184,11 @@ void loop() {
     char lonstr[15];
     dtostrf(lonsec, 6, 4, lonstr);
     sprintf(str, "{LN%s}", lonstr);
+    Serial2.write(str);
+    Serial.println(str);
+
+    long accuracy = myGPS.getPositionAccuracy();
+    sprintf(str, "{LA%d}", accuracy);
     Serial2.write(str);
     Serial.println(str);
     }
