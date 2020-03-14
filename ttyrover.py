@@ -182,7 +182,6 @@ try:
             if (d == '}'):
                 flag = True
                 break
-            time.sleep(.01)
             #endwhile read
 
 #========================================================================
@@ -477,12 +476,12 @@ try:
                     print(cstr)
 
                  epoch = time.time()
-                 #end if flag =======================
 
-            # end main loop ========================
-        flag = False
-        cbuff = ""
-        #end if flag
+
+            flag = False
+            cbuff = ""
+            #end if flag
+        # end main loop ========================
 
 finally:
     robot.motor(0,0)
