@@ -75,7 +75,6 @@ left = False
 left_limit = -36
 right_limit = 36
 epoch = time.time()
-cbuff = ""
 
 auto = False
 flag = False
@@ -108,7 +107,7 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-robot = motor_driver_ada.motor_driver()
+robot = motor_driver_ada.motor_driver_ada()
 Kfilter = cEKF.Kalman_filter()
 print("Rover 1.0 191023")
 port = "/dev/ttyUSB0"
@@ -145,6 +144,13 @@ def fromto(la0, lo0, la1, lo1):
     return((450 - math.degrees(ang))%360)
 
 #===================================================================
+def readusb():
+    try:
+        d = tty.read(1).decode("utf-8")
+        return(d)
+    except UnicodeDecodeError:
+        print("Woops")
+        return (0)
 
         
 #while True:                             #purge xbee
@@ -154,49 +160,42 @@ def fromto(la0, lo0, la1, lo1):
 #=================================================================
 #=================================================================
 
-msgStart = False
 cstr = "{aStby}"
 tty.write(cstr.encode("utf-8"))
 cstr = "{d----}"
 tty.write(cstr.encode("utf-8"))
 cstr = "{c----}"
 tty.write(cstr.encode("utf-8"))
+cbuff = ""
 
 try:
     while True:             #######  main loop    #######
-
-        while True:                         # read characters from slave
-            if (tty.inWaiting() == 0):
-                break
-
-            try:
-                d = tty.read(1).decode("utf-8")
-            except UnicodeDecodeError:
-                cbuff = ""
-                msgStart = False
+        
+        while (tty.inWaiting() > 0):                         # read characters from slave
+            d = readusb()
+            if (d == 0):
                 continue
-            
             if (d == '{'):
-                cbuff = "{"
-                msgStart = True
-                continue
-            if msgStart:
-                cbuff += d
-                if (d == '}'):
-                    flag = True
-                    tt=time.localtime()
-                    ts=time.strftime("%H:%M:%S ", tt)
-                    print("msg: " + ts + cbuff)
+                cbuff = ""
+                flag = False
+            cbuff += d
+            if (d == '}'):
+                flag = True
                 break
+            time.sleep(.01)
             #endwhile read
 
 #========================================================================
         if (flag):                          # flag means we got a command
             msglen = len(cbuff)
             if (msglen < 3 or cbuff[0] != '{'):
+                print("bad msg: ", cbuff)
                 cbuff = ""
                 flag= False
                 continue
+            tt=time.localtime()
+            ts=time.strftime("%H:%M:%S ", tt)
+            print("msg: " + ts + cbuff)
             xchr = cbuff[1]    
                
             if (xchr >= 'A') and (xchr <= 'Z'):
