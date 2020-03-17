@@ -154,6 +154,10 @@ def readusb():
         return (0)
 #===================================================================
 def simple_commands(xchr):
+    global speed
+    global steer
+    global azimuth
+    
     if xchr == '0':                     # 0 - stop
         speed = 0
         robot.motor(speed, steer)
@@ -223,6 +227,12 @@ def simple_commands(xchr):
     return
 #===================end of D commands
 def star_commands(xchr):
+    global auto
+    global azimuth
+    global compass_adjustment
+    global cstr
+    global left
+    
     if (xchr == '0'):                   #standby
         auto = False
         azimuth = hdg
