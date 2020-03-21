@@ -13,16 +13,16 @@
 '''
 +---------+----------+----------+  +---------+----------+----------+
 | L 1deg  | Fwd      | R 1deg   |  | L 90deg | Auto     | R 90deg  |
-|         |          |          |  |         |          |          |
+|        1|         2|         3|  |        1|         2|         3|
 +---------+----------+----------+  +---------+----------+----------+
 | L 5deg  | 0 steer  | R 5deg   |  | Mag     |          | Mag      |
-|         |          |          |  | L 1deg  |          | R 1deg   |
+|        4|         5|         6|  | L 1deg 4|         5| R 1deg  6|
 +---------+----------+----------+  +---------+----------+----------+
 | L 35deg | Rev      | R 35deg  |  | L 180   |          | R 180    |
-|         |          |          |  |         |          |          |
+|        7|         8|         9|  |        7|         8|         9|
 +---------+----------+----------+  +---------+----------+----------+
 |         | Stop     |          |  |  *      | Stby     |          |
-|         |          |          |  |         |          |          |
+|         |         0|          |  |         |         0|          |
 +---------+----------+----------+  +---------+----------+----------+
 
 Sent codes:
@@ -57,14 +57,14 @@ hdg = 0
 oldsteer = 500
 oldspeed = 500
 oldhdg = 500
-compass_adjustment = 257
+compass_adjustment = 283                # test 200321
 ilatsec = 0.0                           # input from GPS hardware
 ilonsec = 0.0
 startlat = 0.0
 startlon = 0.0
 flatsec = 0.0                           # Kalman filtered lat/lon
 flonsec = 0.0
-
+tty = serial.Serial(port, 9600)
 latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
@@ -80,7 +80,7 @@ epoch = time.time()
 auto = False
 flag = False
 rteflag = False
-wptflag = False
+wptflag = Falsetty = serial.Serial(port, 9600)
 
 rtseg = 0
 routes = [[0,0],                    #0
@@ -116,7 +116,7 @@ tty = serial.Serial(port, 9600)
 tty.flushInput()
 
 #===================================================================
-#compute distance from a point to a line
+#compute distanctty = serial.Serial(port, 9600)e from a point to a line
 # dist is + if L1P rotates left into L1L2, else negative
 def pointline(la1, lo1, la2, lo2, lap0, lop0, llen):
     aa1 = la1 * latfeet 
@@ -144,7 +144,7 @@ def fromto(la0, lo0, la1, lo1):
     ang = math.atan2(dely, delx * math.cos(latitude))
     return((450 - math.degrees(ang))%360)
 
-#===================================================================
+#================tty = serial.Serial(port, 9600)===================================================
 def readusb():
     try:
         d = tty.read(1).decode("utf-8")
@@ -154,9 +154,10 @@ def readusb():
         return (0)
 #===================================================================
 def simple_commands(xchr):
+    global auto
+    global azimuth
     global speed
     global steer
-    global azimuth
     
     if xchr == '0':                     # 0 - stop
         speed = 0
@@ -314,84 +315,7 @@ try:
                  if (xchr == 'D'):
                      xchr = cbuff[2]
                      simple_commands(xchr)
-#                     xchr = cbuff[2]
-# 
-#                     if xchr == '0':                     # 0 - stop
-#                         speed = 0
-#                         robot.motor(speed, steer)
-# 
-#                    chr = cbuff[2]
-# 
-#                     elif xchr == '1':                   # 1 - Left
-#                         if (auto):
-#                     xchr = cbuff[2]
-# 
-#                     if xchr == '0':                     # 0 - stop
-#                         speed = 0
-#                         robot.motor(speed, steer)
-# 
-#                     elif xchr == '1':                   # 1 - Left
-#                         if (auto):
-#                             azimuth -= 1
-#                         else:
-#                             steer -= 1
-#                             robot.motor(speed, steer)
-#                             
-#                     elif xchr == '2':                   # 2 - Forward
-#                         if speed <= 90:
-#                             speed += 10
-#                             robot.motor(speed, steer)
-# 
-#                     elif xchr == '3':                   # 3 - Right
-#                         if (auto):
-#                             azimuth += 1
-#                         else:
-#                             steer += 1
-#                             robot.motor(speed, steer)
-# 
-#                     elif xchr == '4':                   # 4 - Left 5 deg
-#                         if (auto):
-#                             azimuth -= 5
-#                         else:
-#                             steer -= 5
-#                             robot.motor(speed, steer)
-#                             
-#                     elif xchr == '5':                   # 5 - Steer zero
-#                         steer = 0
-#                         robot.motor(speed, steer)
-#                         auto = False
-# 
-#                     elif xchr == '6':                   # 6 - Left 5 deg
-#                         if (auto):
-#                             azimuth += 5
-#                         else:
-#                             steer += 5
-#                             robot.motor(speed, steer)
-#                             
-#                     elif xchr == '7':                   # 7 - HAW steer left limit
-#                         dt = 1
-#                         if steer > (left_limit + 1):
-#                             while (steer > left_limit):
-#                                 steer -= dt
-#                                 robot.motor(speed, steer)
-#         #                    time.sleep(0.05)
-#                         steer = left_limit
-#                         robot.motor(speed, steer)
-#                             
-#                     elif xchr == '8':                   # 8 -  Reverse
-#                         if speed >= -90:
-#                             speed -= 10
-#                             robot.motor(speed, steer)
-# 
-#                     elif xchr == '9':                   # 9 - GEE steer right limit
-#                         dt = 1
-#                         if steer < (right_limit - 1):
-#                             while (steer < right_limit):
-#                                 steer += dt
-#                                 robot.motor(speed, steer)
-#                         steer = right_limit
-#                         robot.motor(speed, steer)
-# #===================end of D commands#                         if (auto):
+# #===================end of D commands
 
  
                  elif xchr == 'X':                   #X exit Select button
@@ -414,34 +338,6 @@ try:
                  elif xchr == 'E':
                     xchr = cbuff[2]
                     star_commands(xchr)
-#                     if (xchr == '0'):                   #standby
-#                         auto = False
-#                         azimuth = hdg
-#                         cstr = "{aStby}"
-#                         tty.write(cstr.encode("utf-8"))
-#                     elif (auto and xchr == '1'):      #left 90 deg
-#                         azimuth -= 90
-#                         azimuth %= 360
-#                     elif (xchr == '2'):               #autopilot on
-#                         auto = True
-#                         azimuth = hdg
-#                         cstr = "{aAuto}"
-#                         tty.write(cstr.encode("utf-8"))
-#                     elif (auto and xchr == '3'):      #right 90 deg
-#                         azimuth += 90
-#                         azimuth %= 360
-#                     elif (xchr == '4'):               #adj compass
-#                         compass_adjustment -= 1
-#                     elif (xchr == '6'):               #adj compass
-#                         compass_adjustment += 1
-#                     elif (auto and xchr == '7'):      #left 180 deg
-#                         left = True
-#                         azimuth -= 180
-#                         azimuth %= 360
-#                     elif (auto and xchr == '9'):      #right 180 deg
-#                         left = False
-#                         azimuth += 180
-#                         azimuth %= 360
 
 #======================================================================
 #Keypad commands preceeded by a #
@@ -503,7 +399,7 @@ try:
  #======================================================================
                  if (auto):
                      
-                    if (time.time < (epoch + 1)):
+                    if (time.time() < (epoch + 1)):
                         epoch = time.time()
                         continue
                     if wptflag:
