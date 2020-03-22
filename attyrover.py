@@ -64,8 +64,6 @@ startlat = 0.0
 startlon = 0.0
 flatsec = 0.0                           # Kalman filtered lat/lon
 flonsec = 0.0
-#port = "
-#tty = serial.Serial(port, 9600)
 latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
@@ -400,72 +398,72 @@ try:
  #======================================================================
                  if (auto):
                      
-                    if (time.time() < (epoch + 1)):
+                    if (time.time() > (epoch + 1)):
                         epoch = time.time()
-                        continue
-                    if wptflag:
-                        v = speed * spdfactor
-                        if (steer == 0):
-                            omega = 0
-                        else:
-                            alpha = math.radians(steer)
-                            h = d3/math.sin(alpha)
-                            turn = (h * math.cos(alpha) + d1) / 12.0
-                            omega = v /turn
-                        xEst = Kfilter.Kalman_step(time.time(), ilonsec * lonfeet, \
-                                ilatsec * latfeet, omega, v)
-                        flonsec = xEst[0, 0] / lonfeet
-                        flatsec = xEst[1, 0] / latfeet
-                        fhdg= (450 - math.degrees(xEst[2,0]))%360
-                        print("filtered L/L:",flatsec, "/",flonsec)
-                        print("Filtered hdg: ", fhdg)
-                        print("Filtered speed: ",xEst[3,0] / spdfactor)
-                        dtg = distto(flatsec, flonsec, destlat, destlon)
-                        cstr = "{d%5.1f}" % dtg
-                        tty.write(cstr.encode("utf-8"))
-                        print(cstr)
 
-                        cstr = "{lt%5.3f}" % flatsec    #send to controller
-                        tty.write(cstr.encode("utf-8"))
-                        cstr = "{ln%5.3f}" % flonsec
-                        tty.write(cstr.encode("utf-8"))
-                    
-                        if (dtg < 3.0):             # a foot from waypoint
-                             if rteflag:
-                                rtseg += 1
-                                wpt = routes[route][rtseg]
-                                if (wpt == 0):
-                                    cstr = "{Stby}"
+                        if wptflag:
+                            v = speed * spdfactor
+                            if (steer == 0):
+                                omega = 0
+                            else:
+                                alpha = math.radians(steer)
+                                h = d3/math.sin(alpha)
+                                turn = (h * math.cos(alpha) + d1) / 12.0
+                                omega = v /turn
+                            xEst = Kfilter.Kalman_step(time.time(), ilonsec * lonfeet, \
+                                    ilatsec * latfeet, omega, v)
+                            flonsec = xEst[0, 0] / lonfeet
+                            flatsec = xEst[1, 0] / latfeet
+                            fhdg= (450 - math.degrees(xEst[2,0]))%360
+                            print("filtered L/L:",flatsec, "/",flonsec)
+                            print("Filtered hdg: ", fhdg)
+                            print("Filtered speed: ",xEst[3,0] / spdfactor)
+                            dtg = distto(flatsec, flonsec, destlat, destlon)
+                            cstr = "{d%5.1f}" % dtg
+                            tty.write(cstr.encode("utf-8"))
+                            print(cstr)
+
+                            cstr = "{lt%5.3f}" % flatsec    #send to controller
+                            tty.write(cstr.encode("utf-8"))
+                            cstr = "{ln%5.3f}" % flonsec
+                            tty.write(cstr.encode("utf-8"))
+                        
+                            if (dtg < 3.0):             # a foot from waypoint
+                                 if rteflag:
+                                    rtseg += 1
+                                    wpt = routes[route][rtseg]
+                                    if (wpt == 0):
+                                        cstr = "{Stby}"
+                                        tty.write(cstr.encode("utf-8"))
+                                        wptflg = False
+                                        rteflag = False
+                                        speed = 0
+                                    startlat = ilatsec         #dup'ed code
+                                    startlon = ilonsec
+                                    destlat = waypts[wpt][0]
+                                    destlon = waypts[wpt][1]
+                                    print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
+                                    azimuth = fromto(startlat, startlon,\
+                                        destlat, destlon)
+                                    wptdist = distto(startlat, startlon, \
+                                        destlat, destlon)
+                                    cstr = "{aWp" + str(wpt) + "}"
                                     tty.write(cstr.encode("utf-8"))
-                                    wptflg = False
-                                    rteflag = False
-                                    speed = 0
-                                startlat = ilatsec         #dup'ed code
-                                startlon = ilonsec
-                                destlat = waypts[wpt][0]
-                                destlon = waypts[wpt][1]
-                                print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
-                                azimuth = fromto(startlat, startlon,\
-                                    destlat, destlon)
-                                wptdist = distto(startlat, startlon, \
-                                    destlat, destlon)
-                                cstr = "{aWp" + str(wpt) + "}"
-                                tty.write(cstr.encode("utf-8"))
 
-                             else:
-                                cstr = "{aStby}"
-                                tty.write(cstr.encode("utf-8"))
-                                wptflag =  False
+                                 else:
+                                    cstr = "{aStby}"
+                                    tty.write(cstr.encode("utf-8"))
+                                    wptflag =  False
 
-                        if (rteflag or wptflag):
-                            nowhdg = fromto(flatsec, flonsec, destlat, destlon)
-                            angle = nowhdg - azimuth
-                            dst = pointline(startlat, startlon, \
-                                destlat, destlon, flatsec, flonsec, wptdist) 
-                            if (dst > 3 or angle > 3):
-                                compass_adjustment -= 1
-                            if (dst < -3 or angle < -3):
-                                compass_adjustment += 1
+                            if (rteflag or wptflag):
+                                nowhdg = fromto(flatsec, flonsec, destlat, destlon)
+                                angle = nowhdg - azimuth
+                                dst = pointline(startlat, startlon, \
+                                    destlat, destlon, flatsec, flonsec, wptdist) 
+                                if (dst > 3 or angle > 3):
+                                    compass_adjustment -= 1
+                                if (dst < -3 or angle < -3):
+                                    compass_adjustment += 1
                         #end if auto
                                 
                     steer = int(azimuth - hdg)
