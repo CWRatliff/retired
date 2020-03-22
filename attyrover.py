@@ -64,7 +64,8 @@ startlat = 0.0
 startlon = 0.0
 flatsec = 0.0                           # Kalman filtered lat/lon
 flonsec = 0.0
-tty = serial.Serial(port, 9600)
+#port = "
+#tty = serial.Serial(port, 9600)
 latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
@@ -80,7 +81,7 @@ epoch = time.time()
 auto = False
 flag = False
 rteflag = False
-wptflag = Falsetty = serial.Serial(port, 9600)
+wptflag = False
 
 rtseg = 0
 routes = [[0,0],                    #0
