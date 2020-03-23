@@ -102,16 +102,17 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [18.393, 6.283, "longe center"],    #19
 [18.181, 7.900, "stall ctr"],       #20
 [21.174, 6.110, "E dway start"],    #21
-[21.675, 6.576, "tool shed area"],  #22
-[22.173, 6.837, "canopy c/l"],      #23
+[22.227, 6.883, "horse gravel"],    #22
+[22.806, 7.303, "trash"],           #23
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
+version = "Rover 1.0 200323\n"
+print(version)
 log = open("logfile.txt", 'a')
-log.write("Rover 1.0 200315")
+log.write(version)
 robot = motor_driver_ada.motor_driver_ada(log)
 Kfilter = cEKF.Kalman_filter()
-print("Rover 1.0 200315")
 port = "/dev/ttyUSB0"
 tty = serial.Serial(port, 9600)
 tty.flushInput()
@@ -191,6 +192,17 @@ def simple_commands(xchr):
             robot.motor(speed, steer)
             
     elif xchr == '5':                   # 5 - Steer zero
+        dt = 1
+        if steer > 0:
+            while (steer > 0):
+                steer -= dt
+                robot.motor(speed, steer)
+#               time.sleep(0.05)
+        elif steer < 0:
+            while (steer < 0):
+                steer += dt
+                robot.motor(speed, steer)
+#               time.sleep(0.05)
         steer = 0
         robot.motor(speed, steer)
         auto = False
@@ -317,30 +329,11 @@ try:
                      log.write(ts)
                      xchr = cbuff[2]
                      simple_commands(xchr)
-# #===================end of D commands
-
- 
-                 elif xchr == 'X':                   #X exit Select button
-                    robot.stop_all()
-                    speed = 0
-                    exit()
-                    
-                 elif xchr == 'O':                   #O - orientation esp hdg from arduino
-                    if (msglen < 4 or msglen > 6):
-                        cbuff = ""
-                        continue
-                    hdg = int(cbuff[2:msglen-1])
-                    hdg = (hdg + compass_adjustment)%360
-                    print("heading = " + str(hdg))
-
-                    print("Motor speed, steer "+str(speed)+", "+str(steer))
-
 #======================================================================
 # Keypad commands preceded by a star
                  elif xchr == 'E':
                     xchr = cbuff[2]
                     star_commands(xchr)
-
 #======================================================================
 #Keypad commands preceeded by a #
                  elif xchr == 'F':                   #goto waypoint
@@ -383,7 +376,6 @@ try:
                                 speed * spdfactor)
                     except ValueError:
                         print("bad data" + cbuff)
-
 #======================================================================
                  elif xchr == 'L':                   #lat/long input from GPS h/w
                     xchr = cbuff[2]
@@ -398,7 +390,24 @@ try:
                         print("bad data" + cbuff)
                     finally:
                         pass
- #======================================================================
+#============================================================================= 
+                 elif xchr == 'O':                   #O - orientation esp hdg from arduino
+                    if (msglen < 4 or msglen > 6):
+                        cbuff = ""
+                        continue
+                    hdg = int(cbuff[2:msglen-1])
+                    hdg = (hdg + compass_adjustment)%360
+                    print("heading = " + str(hdg))
+
+                    print("Motor speed, steer "+str(speed)+", "+str(steer))
+
+#=========================================================================                    
+                 elif xchr == 'X':                   #X exit Select button
+                    robot.stop_all()
+                    speed = 0
+                    exit()
+                    
+#======================================================================
                  if (auto):
                      
                     if (time.time() > (epoch + 1)):
