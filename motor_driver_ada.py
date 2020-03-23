@@ -13,9 +13,9 @@ bias = 60
 left_limit = -36
 right_limit = 36
 
-class motor_driver:
+class motor_driver_ada:
 
-    def __init__(self):
+    def __init__(self, log):
 #        self.i2c = busio.I2C(SCL, SDA)
 #        self.pca = PCA9685(self.i2c)
 #        self.pca.frequency = 50
@@ -35,6 +35,7 @@ class motor_driver:
         self.fr_motor.set_pulse_width_range(700, 2300)
         self.fl_motor.set_pulse_width_range(700, 2300)
         self.bl_motor.set_pulse_width_range(700, 2300)
+        self.log = log
         
         self.rc = Roboclaw("/dev/ttyS0",115200)
         i = self.rc.Open()
@@ -114,6 +115,8 @@ class motor_driver:
             self.turn_motor(0x80, vel, vic, vim)
             self.turn_motor(0x81, vel, vic, voc)
             self.turn_motor(0x82, vel, 1, voc)
+            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
+            self.log.write(cstr)
 
 #right turn
         elif steer > 0:
@@ -124,6 +127,8 @@ class motor_driver:
             self.turn_motor(0x80, vel, voc, 1)
             self.turn_motor(0x81, vel, voc, vic)
             self.turn_motor(0x82, vel, vim, vic)
+            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
+            self.log.write(cstr)
 
 #straight ahead
         else:

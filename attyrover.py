@@ -107,14 +107,14 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-robot = motor_driver_ada.motor_driver_ada()
+log = open("logfile.txt", 'a')
+log.write("Rover 1.0 200315")
+robot = motor_driver_ada.motor_driver_ada(log)
 Kfilter = cEKF.Kalman_filter()
 print("Rover 1.0 200315")
 port = "/dev/ttyUSB0"
 tty = serial.Serial(port, 9600)
 tty.flushInput()
-log = open("logfile.txt", 'a')
-log.write("Rover 1.0 200315")
 
 #===================================================================
 #compute distanctty = serial.Serial(port, 9600)e from a point to a line
@@ -314,6 +314,7 @@ try:
 #======================================================================
 # single digit keypad commands
                  if (xchr == 'D'):
+                     log.write(ts)
                      xchr = cbuff[2]
                      simple_commands(xchr)
 # #===================end of D commands
@@ -507,5 +508,7 @@ try:
 finally:
     robot.motor(0,0)
     log.close()
-    print("Halted")
+    cstr = "{aStop}"
+    tty.write(cstr.encode("utf-8"))
+    print("Stopped")
 #    robot.deinit()
