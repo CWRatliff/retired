@@ -113,6 +113,8 @@ print("Rover 1.0 200315")
 port = "/dev/ttyUSB0"
 tty = serial.Serial(port, 9600)
 tty.flushInput()
+log = open("logfile.txt", 'a')
+log.write("Rover 1.0 200315")
 
 #===================================================================
 #compute distanctty = serial.Serial(port, 9600)e from a point to a line
@@ -504,5 +506,6 @@ try:
 
 finally:
     robot.motor(0,0)
+    log.close()
     print("Halted")
 #    robot.deinit()
