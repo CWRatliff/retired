@@ -364,7 +364,9 @@ try:
                             startlon = ilonsec
                             destlat = waypts[wpt][0]
                             destlon = waypts[wpt][1]
-                            print ("wpt: "+ str(wpt)+','+str(destlat)+','+str(destlon))
+                            ostr = "wpt: "+ str(wpt)+','+str(destlat)+','+str(destlon)
+                            print (ostr)
+                            log.write(ostr + "\n")
                             azimuth = fromto(startlat, startlon, destlat, destlon)
                             wptdist = distto(startlat, startlon, destlat, destlon)
                             auto = True
@@ -427,13 +429,20 @@ try:
                             flonsec = xEst[0, 0] / lonfeet
                             flatsec = xEst[1, 0] / latfeet
                             fhdg= (450 - math.degrees(xEst[2,0]))%360
-                            print("filtered L/L:",flatsec, "/",flonsec)
-                            print("Filtered hdg: ", fhdg)
-                            print("Filtered speed: ",xEst[3,0] / spdfactor)
+                            ostr = "filtered L/L:" + str(flatsec) + "/" + str(flonsec)
+                            print(ostr)
+                            log.write(ostr+"\n")
+                            ostr = "Filtered hdg: " + str(fhdg)
+                            print(ostr)
+                            log.write(ostr+"\n")
+                            ostr = "Filtered speed: " + str(xEst[3,0] / spdfactor)
+                            print (ostr)
+                            log.write(ostr + "\n")
                             dtg = distto(flatsec, flonsec, destlat, destlon)
                             cstr = "{d%5.1f}" % dtg
                             tty.write(cstr.encode("utf-8"))
                             print(cstr)
+                            log.write(cstr + "\n")
 
                             cstr = "{lt%5.3f}" % flatsec    #send to controller
                             tty.write(cstr.encode("utf-8"))
@@ -454,7 +463,9 @@ try:
                                     startlon = ilonsec
                                     destlat = waypts[wpt][0]
                                     destlon = waypts[wpt][1]
-                                    print ("wpt: "+ str(wpt) + ','+str(destlat)+','+str(destlon))
+                                    ostr = "wpt: %d %5.3f/%5.3f", (wpt, destlat, destlon)
+                                    print (ostr)
+                                    log.write(ostr+"\n")
                                     azimuth = fromto(startlat, startlon,\
                                         destlat, destlon)
                                     wptdist = distto(startlat, startlon, \
@@ -495,16 +506,19 @@ try:
                     tty.write(cstr.encode("utf-8"))
                     oldhdg = hdg
                     print(cstr)
+                    log.write(cstr + "\n")
                  if (speed != oldspeed):
                     cstr = "{v%4d}" % speed
                     tty.write(cstr.encode("utf-8"))
                     oldspeed = speed
                     print(cstr)
+                    log.write(cstr + "\n")
                  if (steer != oldsteer):
                     cstr = "{s%4d}" % steer
                     tty.write(cstr.encode("utf-8"))
                     oldsteer = steer
                     print(cstr)
+                    log.write(cstr + "\n")
 
                  epoch = time.time()
 
