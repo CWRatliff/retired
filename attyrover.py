@@ -107,7 +107,7 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-version = "Rover 1.0 200323\n"
+version = "Rover 1.0 200328\n"
 print(version)
 log = open("logfile.txt", 'a')
 log.write(version)
@@ -118,7 +118,7 @@ tty = serial.Serial(port, 9600)
 tty.flushInput()
 
 #===================================================================
-#compute distanctty = serial.Serial(port, 9600)e from a point to a line
+#compute distance from a point to a line
 # dist is + if L1P rotates left into L1L2, else negative
 def pointline(la1, lo1, la2, lo2, lap0, lop0, llen):
     aa1 = la1 * latfeet 
@@ -327,13 +327,16 @@ try:
 # single digit keypad commands
                  if (xchr == 'D'):
                      log.write(ts)
+                     log.write(cbuff+'\n')
                      xchr = cbuff[2]
                      simple_commands(xchr)
 #======================================================================
 # Keypad commands preceded by a star
                  elif xchr == 'E':
-                    xchr = cbuff[2]
-                    star_commands(xchr)
+                     log.write(ts)
+                     log.write(cbuff+'\n')
+                     xchr = cbuff[2]
+                     star_commands(xchr)
 #======================================================================
 #Keypad commands preceeded by a #
                  elif xchr == 'F':                   #goto waypoint
@@ -440,6 +443,11 @@ try:
                             log.write(ostr + "\n")
                             dtg = distto(flatsec, flonsec, destlat, destlon)
                             cstr = "{d%5.1f}" % dtg
+                            tty.write(cstr.encode("utf-8"))
+                            print(cstr)
+                            log.write(cstr + "\n")
+                            ctg = fromto(flatsec, flonsec, destlat, destlon)
+                            cstr = "{c%5.1f}" % ctg
                             tty.write(cstr.encode("utf-8"))
                             print(cstr)
                             log.write(cstr + "\n")

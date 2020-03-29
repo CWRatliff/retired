@@ -74,10 +74,10 @@ class motor_driver_ada:
         self.turn_motor(0X82, 0, 0, 0)
 
     def motor_speed(self):
-                speed = self.rc.ReadSpeedM1(0x82)
-                print ("motor speed =" + str(speed))
-                speed = self.rc.ReadSpeedM2(0x81)
-                print ("motor speed =" + str(speed))
+        speed = self.rc.ReadSpeedM1(0x82)
+        print ("motor speed =" + str(speed))
+        speed = self.rc.ReadSpeedM2(0x81)
+        print ("motor speed =" + str(speed))
 
 # based on speed & steer, command all motors
     def motor(self, speed, steer):
@@ -90,7 +90,7 @@ class motor_driver_ada:
         vel = speed * 1.26
         voc = 0
         vic = 0
-        #roboclaw speed limit -127 to 127
+        #roboclaw speed limit 0 to 127
         if steer != 0:                                  #if steering angle not zero, compute angles, wheel speed
             angle = math.radians(abs(steer))
             ric = self.d3 / math.sin(angle)             #turn radius - inner corner
@@ -100,7 +100,7 @@ class motor_driver_ada:
             rmi = rm - self.d4                          #middle inner
             phi = math.degrees(math.asin(self.d3 / roc))
             if steer < 0:
-                                phi = -phi
+                phi = -phi
             voc = roc / rmo                             #velocity corners & middle inner
             vic = ric / rmo
             vim = rmi / rmo
@@ -112,11 +112,11 @@ class motor_driver_ada:
             self.fr_motor.angle = bias - phi
             self.bl_motor.angle = bias + steer
             self.br_motor.angle = bias + phi
-            self.turn_motor(0x80, vel, vic, vim)
-            self.turn_motor(0x81, vel, vic, voc)
-            self.turn_motor(0x82, vel, 1, voc)
-            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
-            self.log.write(cstr)
+            self.turn_motor(0x80, vel, vic, vim)        #RC 1 - fr, rm
+            self.turn_motor(0x81, vel, vic, voc)        #RC 2 - br, bl
+            self.turn_motor(0x82, vel, 1, voc)          #RC 3 - lm, fl
+#            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
+#            self.log.write(cstr)
 
 #right turn
         elif steer > 0:
@@ -127,8 +127,8 @@ class motor_driver_ada:
             self.turn_motor(0x80, vel, voc, 1)
             self.turn_motor(0x81, vel, voc, vic)
             self.turn_motor(0x82, vel, vim, vic)
-            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
-            self.log.write(cstr)
+#            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
+#            self.log.write(cstr)
 
 #straight ahead
         else:
