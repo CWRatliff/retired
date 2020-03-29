@@ -91,6 +91,8 @@ class motor_driver_ada:
         voc = 0
         vic = 0
         #roboclaw speed limit 0 to 127
+        # see BOT-2/18 (181201)
+        # rechecked 200329
         if steer != 0:                                  #if steering angle not zero, compute angles, wheel speed
             angle = math.radians(abs(steer))
             ric = self.d3 / math.sin(angle)             #turn radius - inner corner
@@ -112,9 +114,9 @@ class motor_driver_ada:
             self.fr_motor.angle = bias - phi
             self.bl_motor.angle = bias + steer
             self.br_motor.angle = bias + phi
-            self.turn_motor(0x80, vel, vic, vim)        #RC 1 - fr, rm
-            self.turn_motor(0x81, vel, vic, voc)        #RC 2 - br, bl
-            self.turn_motor(0x82, vel, 1, voc)          #RC 3 - lm, fl
+            self.turn_motor(0x80, vel, voc, 1)          #RC 1 - fr, rm
+            self.turn_motor(0x81, vel, voc, vic)        #RC 2 - br, bl
+            self.turn_motor(0x82, vel, vim, vic)        #RC 3 - lm, fl
 #            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
 #            self.log.write(cstr)
 
@@ -124,9 +126,9 @@ class motor_driver_ada:
             self.fr_motor.angle = bias - steer
             self.bl_motor.angle = bias + phi
             self.br_motor.angle = bias + steer
-            self.turn_motor(0x80, vel, voc, 1)
-            self.turn_motor(0x81, vel, voc, vic)
-            self.turn_motor(0x82, vel, vim, vic)
+            self.turn_motor(0x80, vel, vic, vim)
+            self.turn_motor(0x81, vel, vic, voc)
+            self.turn_motor(0x82, vel, 1, voc)
 #            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
 #            self.log.write(cstr)
 
