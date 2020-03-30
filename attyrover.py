@@ -67,7 +67,7 @@ flonsec = 0.0
 latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
-spdfactor = .0035
+spdfactor = .008                        # convert speed percentage to ft/sec ref BOR:3/17
 d1 = 7.254
 d3 = 10.5
 
@@ -107,7 +107,7 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-version = "Rover 1.0 200328\n"
+version = "Rover 1.0 200330\n"
 print(version)
 log = open("logfile.txt", 'a')
 log.write(version)
@@ -318,7 +318,9 @@ try:
                 continue
             tt=time.localtime()
             ts=time.strftime("%H:%M:%S ", tt)
-            print("msg: " + ts + cbuff)
+            ostr = "msg: " + ts + cbuff
+            print(ostr)
+            log.write(ostr + '\n')
             xchr = cbuff[1]    
                
             if (xchr >= 'A') and (xchr <= 'Z'):
@@ -326,15 +328,15 @@ try:
 #======================================================================
 # single digit keypad commands
                  if (xchr == 'D'):
-                     log.write(ts)
-                     log.write(cbuff+'\n')
+#                     log.write(ts)
+#                     log.write(cbuff+'\n')
                      xchr = cbuff[2]
                      simple_commands(xchr)
 #======================================================================
 # Keypad commands preceded by a star
                  elif xchr == 'E':
-                     log.write(ts)
-                     log.write(cbuff+'\n')
+#                     log.write(ts)
+#                     log.write(cbuff+'\n')
                      xchr = cbuff[2]
                      star_commands(xchr)
 #======================================================================
@@ -427,6 +429,15 @@ try:
                                 h = d3/math.sin(alpha)
                                 turn = (h * math.cos(alpha) + d1) / 12.0
                                 omega = v /turn
+                            ostr = "raw L/L:" + str(ilatsec) + "/" + str(ilonsec)
+                            print(ostr)
+                            log.write(ostr+"\n")
+                            ostr = "raw hdg: " + str(hdg)
+                            print(ostr)
+                            log.write(ostr+"\n")
+                            ostr = "raw speed: " + str(v)
+                            print (ostr)
+                            log.write(ostr + "\n")
                             xEst = Kfilter.Kalman_step(time.time(), ilonsec * lonfeet, \
                                     ilatsec * latfeet, omega, v)
                             flonsec = xEst[0, 0] / lonfeet
