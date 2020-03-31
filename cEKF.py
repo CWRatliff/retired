@@ -2,7 +2,7 @@
 Adapted from Extended Kalman Filter by Atsushi Sakai
 //http://atsushiasakai.github.io/PythonRobotics
 
-with state vector {x, y, speed, heading}
+with state vector {x, y, heading, speed}
 '''
 import math
 import numpy as np
@@ -21,7 +21,7 @@ class Kalman_filter:
 
     # predict new position based on dead reconning
     # x - state vector input output
-    # u - [speed, steer]
+    # u - [speed, omega]
     def motion_model(self, x, u):
         print("motion x", x)
         print("motion u", u)
@@ -29,7 +29,7 @@ class Kalman_filter:
                       [0, 1.0, 0, 0],
                       [0, 0, 1.0, 0],
                       [0, 0, 0, 0]])
-        B = np.array([[self.DT * math.cos(x[2, 0]), 0],
+        B = np.array([[self.DT * math.cos(x[2, 0]), 0],   #N.B. x[2,0] = phi
                       [self.DT * math.sin(x[2, 0]), 0],
                       [0, self.DT],
                       [1.0, 0.0]])
@@ -93,7 +93,7 @@ class Kalman_filter:
         return self.xEst
 
 
-    # time - start time of sample
+    # begin - start time of sample
     # v - fps
     # phi - heading radians
     # x - x-axis
@@ -108,7 +108,7 @@ class Kalman_filter:
         self.xEst[2, 0] = phi
         self.xEst[3, 0] = v
 
-    # time - time of sample seconds
+    # t - time of sample seconds
     # v - fps
     # phi = heading in radians (E, N)
     # x - x-axis

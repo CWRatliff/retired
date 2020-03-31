@@ -40,13 +40,13 @@ Received codes
 D - one digit commands
 E - 'star' commnds
 F - 'pound' commands
+N - gps lat/lon/accuracy
 O - compass heading
 '''
 import sys
 import serial
 import time
 import math
-import spidev
 import motor_driver_ada
 import cEKF
 
@@ -74,8 +74,8 @@ spdfactor = .008                        # convert speed percentage to ft/sec ref
 left = False
 left_limit = -36
 right_limit = 36
-epoch = time.time()
-
+gpsepoch = time.time()
+imuepoch = time.time()
 auto = False
 flag = False
 rteflag = False
@@ -170,6 +170,8 @@ def simple_commands(xchr):
             azimuth -= 1
         else:
             steer -= 1
+            if steer < (left_limit + 1):
+                return
             robot.motor(speed, steer)
             
     elif xchr == '2':                   # 2 - Forward
@@ -182,6 +184,8 @@ def simple_commands(xchr):
             azimuth += 1
         else:
             steer += 1
+            if steer > (right_limit + 1):
+                return
             robot.motor(speed, steer)
 
     elif xchr == '4':                   # 4 - Left 5 deg
@@ -189,6 +193,8 @@ def simple_commands(xchr):
             azimuth -= 5
         else:
             steer -= 5
+            if steer < (left_limit + 1):
+                steer = left_limit
             robot.motor(speed, steer)
             
     elif xchr == '5':                   # 5 - Steer zero
@@ -212,6 +218,8 @@ def simple_commands(xchr):
             azimuth += 5
         else:
             steer += 5
+            if (steer > (right_limit + 1)):
+                steer = right_limit
             robot.motor(speed, steer)
             
     elif xchr == '7':                   # 7 - HAW steer left limit
@@ -265,8 +273,14 @@ def star_commands(xchr):
         azimuth %= 360
     elif (xchr == '4'):               #adj compass
         compass_adjustment -= 1
+        ostr = "Compass bias "+str(compass_adjustment)
+        print (ostr)
+        log.write(ostr+'\n')
     elif (xchr == '6'):               #adj compass
         compass_adjustment += 1
+        ostr = "Compass bias "+str(compass_adjustment)
+        print (ostr)
+        log.write(ostr+'\n')
     elif (auto and xchr == '7'):      #left 180 deg
         left = True
         azimuth -= 180
@@ -417,7 +431,7 @@ try:
 #======================================================================
                  if (auto):
                      
-                    if (time.time() > (epoch + 1)):
+                    if (time.time() > (epoch + 1)):     #once per sec
                         epoch = time.time()
 
                         if wptflag:
@@ -460,8 +474,8 @@ try:
                             tty.write(cstr.encode("utf-8"))
                             print(cstr)
                             log.write(cstr + "\n")
-                            ctg = fromto(flatsec, flonsec, destlat, destlon)
-                            cstr = "{c%5.1f}" % ctg
+                            azimuth = fromto(flatsec, flonsec, destlat, destlon)
+                            cstr = "{c%5.1f}" % azimuth
                             tty.write(cstr.encode("utf-8"))
                             print(cstr)
                             log.write(cstr + "\n")
@@ -499,6 +513,7 @@ try:
                                     cstr = "{aStby}"
                                     tty.write(cstr.encode("utf-8"))
                                     wptflag =  False
+                                    speed = 0
 
                             if (rteflag or wptflag):
                                 nowhdg = fromto(flatsec, flonsec, destlat, destlon)
