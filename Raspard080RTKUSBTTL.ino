@@ -4,10 +4,10 @@
 
 #define FALSE 0
 #define TRUE 1
-//#define LTBIAS  342333333     // VdM 34d 14m
-//#define LNBIAS  1190666666    // 119d 4m
-#define LTBIAS 342166666   // Aven Navidad 34d 13m
-#define LNBIAS 1190000000   // 119d 0m
+#define LTBIAS  342333333     // VdM 34d 14m
+#define LNBIAS  1190666666    // 119d 4m
+//#define LTBIAS 342166666   // Aven Navidad 34d 13m
+//#define LNBIAS 1190000000   // 119d 0m
 
 #include <Wire.h>
 #include "SparkFun_BNO080_Arduino_Library.h"
@@ -17,7 +17,8 @@
 SFE_UBLOX_GPS myGPS;
 BNO080 myIMU;
 
-unsigned long epoch;
+unsigned long imuepoch;
+unsigned long gpsepoch;
 char    str[25];
 byte    rtcm[100];
 int     rtcmflag = FALSE;
@@ -35,7 +36,7 @@ void setup() {
 
   Wire.begin();
   myIMU.begin();
-  myIMU.enableRotationVector(450); //Send data update every 450ms
+  myIMU.enableRotationVector(50); //Send data update every 50ms
   myGPS.begin();
   myGPS.setI2COutput(COM_TYPE_UBX); //Set the I2C port to output UBX only (turn off NMEA noise)
   myGPS.saveConfiguration(); //Save the current settings to flash and BBR
@@ -97,8 +98,8 @@ void loop() {
       }
     }
       
-  if ((millis() - epoch) > 1000) {
-    epoch = millis();
+  if ((millis() - imuepoch) > 250) {
+    imuepoch = millis();
     
     if (myIMU.dataAvailable() == true) {
       qx = myIMU.getQuatI();
@@ -156,7 +157,9 @@ void loop() {
       Serial.print(roll*180.0/M_PI, 2);
       Serial.println(str);
 */
-
+    if ((millis() - gpsepoch) < 1000)
+      return;
+    gpsepoch = millis();
 
     long latitude = myGPS.getLatitude();
     long longitude = myGPS.getLongitude();
@@ -188,8 +191,10 @@ void loop() {
     Serial.println(str);
 
     long accuracy = myGPS.getPositionAccuracy();
-    sprintf(str, "{LA%d}", accuracy);
-    Serial2.write(str);
-    Serial.println(str);
+    if (accuracy > 0) {
+      sprintf(str, "{LA%ld}", accuracy);
+      Serial2.write(str);
+      Serial.println(str);
+      }
     }
   } 
