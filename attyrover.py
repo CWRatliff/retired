@@ -57,7 +57,7 @@ hdg = 0
 oldsteer = 500
 oldspeed = 500
 oldhdg = 500
-compass_adjustment = 283                # test 200321
+compass_adjustment = 290                # test 200330
 ilatsec = 0.0                           # input from GPS hardware
 ilonsec = 0.0
 startlat = 0.0
@@ -68,8 +68,8 @@ latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
 spdfactor = .008                        # convert speed percentage to ft/sec ref BOR:3/17
-d1 = 7.254
-d3 = 10.5
+#d1 = 7.254
+#d3 = 10.5
 
 left = False
 left_limit = -36
@@ -107,7 +107,7 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-version = "Rover 1.0 200330\n"
+version = "Rover 1.0 200331\n"
 print(version)
 log = open("logfile.txt", 'a')
 log.write(version)
@@ -422,6 +422,8 @@ try:
 
                         if wptflag:
                             v = speed * spdfactor
+                            phi =math.radians((450-hdg)%360)
+                            '''
                             if (steer == 0):
                                 omega = 0
                             else:
@@ -429,6 +431,7 @@ try:
                                 h = d3/math.sin(alpha)
                                 turn = (h * math.cos(alpha) + d1) / 12.0
                                 omega = v /turn
+                            '''
                             ostr = "raw L/L:" + str(ilatsec) + "/" + str(ilonsec)
                             print(ostr)
                             log.write(ostr+"\n")
@@ -439,7 +442,7 @@ try:
                             print (ostr)
                             log.write(ostr + "\n")
                             xEst = Kfilter.Kalman_step(time.time(), ilonsec * lonfeet, \
-                                    ilatsec * latfeet, omega, v)
+                                    ilatsec * latfeet, phi, v)
                             flonsec = xEst[0, 0] / lonfeet
                             flatsec = xEst[1, 0] / latfeet
                             fhdg= (450 - math.degrees(xEst[2,0]))%360

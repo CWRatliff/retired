@@ -1,11 +1,12 @@
 '''
-Extended Kalman Filter by Atsushi Sakai
+Adapted from Extended Kalman Filter by Atsushi Sakai
+//http://atsushiasakai.github.io/PythonRobotics
 
 with state vector {x, y, speed, heading}
 '''
 import math
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 class Kalman_filter:
@@ -22,20 +23,19 @@ class Kalman_filter:
     # x - state vector input output
     # u - [speed, steer]
     def motion_model(self, x, u):
-#        print("motion x", x)
-#        print("motion u", u)
+        print("motion x", x)
+        print("motion u", u)
         F = np.array([[1.0, 0, 0, 0],             # state transition matrix
                       [0, 1.0, 0, 0],
                       [0, 0, 1.0, 0],
                       [0, 0, 0, 0]])
-        B = np.array([[self.DT * math.cos(u[0, 1]), 0],
-                      [self.DT * math.sin(u[0, 1]), 0],
+        B = np.array([[self.DT * math.cos(x[2, 0]), 0],
+                      [self.DT * math.sin(x[2, 0]), 0],
                       [0, self.DT],
                       [1.0, 0.0]])
-#        print("motion B", B)
+        print("motion B mat",B)
         x = F.dot(x) + B.dot(u.T)
-
-#        print("motion ret x", x)
+        print("motion x(t+1)", x)
         return x
     
     # x - state vector
@@ -45,7 +45,6 @@ class Kalman_filter:
             [1, 0, 0, 0],
             [0, 1, 0, 0]])
         z = H.dot(x)
-#        print("obs_mod z", z)
         return z
 
     #motion model Jacobian matrix
@@ -81,30 +80,27 @@ class Kalman_filter:
         # predict
         xPred = self.motion_model(self.xEst, u)
         jF = self.jacobiF(u)
-#        print("jF",jF)
-#        print("pEst", self.pEst)
-#        print("R", self.R)
         pPred = jF.dot(self.pEst).dot(jF.T) + self.R
-#        print("Pred", pPred)
         
         # update
         jH = self.jacobiH()
         zPred = self.observation_model(xPred)
-#        print("zPred", zPred)
-#        print("z", z)
         y = z.T - zPred
-#        print("y", y)
         S = jH.dot(pPred).dot(jH.T) + self.Q
-        print("S", S)
         K = pPred.dot(jH.T).dot(np.linalg.inv(S))
-#        print("K", K)
         self.xEst = xPred + K.dot(y)
         self.pEst = (np.eye(len(self.xEst)) - K.dot(jH)).dot(pPred)
         return self.xEst
 
 
+    # time - start time of sample
+    # v - fps
+    # phi - heading radians
+    # x - x-axis
+    # y - y-axis
     def Kalman_start(self, begin, x, y, phi, v):
         self.t0 = begin
+        self.oldphi = phi
         self.xEst = np.zeros((4,1))              # infinite a priori
         self.pEst = np.zeros((4,4))
         self.xEst[0, 0] = x
@@ -112,16 +108,17 @@ class Kalman_filter:
         self.xEst[2, 0] = phi
         self.xEst[3, 0] = v
 
-    # time - delta T of sample
-    # speed - fps
-    # hdg - radians (x-axis zero)
+    # time - time of sample seconds
+    # v - fps
+    # phi = heading in radians (E, N)
     # x - x-axis
     # y - y-axis
-    def Kalman_step(self, t, x, y, omega, v):
-    #    u = (np.array([[speed, hdg]])).T
+    def Kalman_step(self, t, x, y, phi, v):
         self.DT = t - self.t0
         self.t0 = t
-        u = np.array([[v, omega]])
+        self.omega = (phi - self.oldphi) / self.DT
+        u = np.array([[v, self.omega]])
         z = np.array([[x, y]])
         self.xEst = self.Kalman_update(z, u)
         return self.xEst
+
