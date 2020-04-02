@@ -16,8 +16,8 @@ class Kalman_filter:
         self.ang = 0
         self.xEst = np.zeros((4,1))                        # state vector
         self.pEst = np.zeros((4,4))                        # state covariance matrix
-        self.Q = np.diag([1.0, 1.0])**2                    # process noise covariance  
-        self.R = np.diag([0.1, 0.1, np.deg2rad(1.0), .1])**2 # measurement noise covariance
+        self.R = np.diag([1.0, 1.0])**2                    # process noise covariance  
+        self.Q = np.diag([0.1, 0.1, np.deg2rad(1.0), 1])**2 # observation noise covariance
 
     # predict new position based on dead reconning
     # x - state vector input output
@@ -34,7 +34,7 @@ class Kalman_filter:
                       [0, self.DT],
                       [1.0, 0.0]])
         print("motion B mat",B)
-        x = F.dot(x) + B.dot(u.T)
+        x = F @ x + B @ u
         print("motion x(t+1)", x)
         return x
     
@@ -44,23 +44,18 @@ class Kalman_filter:
         H = np.array([                              # measurement function
             [1, 0, 0, 0],
             [0, 1, 0, 0]])
-        z = H.dot(x)
+        z = H @ x
         return z
 
     #motion model Jacobian matrix
     # x - state vector
     # u - input vector
-    def jacobiF(self, u):
+    def jacobiF(self, x, u):
+        yaw = x[2, 0]
         v = u[0, 0]
-        d = self.DT * v
-        alpha = u[0, 1]
-        sina = math.sin(alpha)
-        cosa = math.cos(alpha)
-        dsina = sina * d
-        dcosa = cosa * d
         jF=np.array([
-            [1.0, 0.0, -dsina, self.DT * cosa],
-            [0.0, 1.0, dcosa , self.DT * sina],
+            [1.0, 0.0, -self.DT * v * math.sin(yaw), self.DT * math.cos(yaw)],
+            [0.0, 1.0, self.DT * v * math.cos(yaw) , self.DT * math.sin(yaw)],
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]])
         return jF
@@ -79,17 +74,18 @@ class Kalman_filter:
     def Kalman_update(self, z, u):
         # predict
         xPred = self.motion_model(self.xEst, u)
-        jF = self.jacobiF(u)
-        pPred = jF.dot(self.pEst).dot(jF.T) + self.R
+        jF = self.jacobiF(xPred, u)
+        pPred = jF @ self.pEst @ jF.T + self.Q
         
         # update
         jH = self.jacobiH()
         zPred = self.observation_model(xPred)
-        y = z.T - zPred
-        S = jH.dot(pPred).dot(jH.T) + self.Q
-        K = pPred.dot(jH.T).dot(np.linalg.inv(S))
-        self.xEst = xPred + K.dot(y)
-        self.pEst = (np.eye(len(self.xEst)) - K.dot(jH)).dot(pPred)
+        y = z - zPred
+        S = jH @ pPred @ jH.T + self.R
+        K = pPred @ jH.T @ np.linalg.inv(S)
+        print ("Kdoty ",K.dot(y))
+        self.xEst = xPred + K @ y
+        self.pEst = (np.eye(len(self.xEst)) - K @ jH) @ pPred
         return self.xEst
 
 
@@ -117,8 +113,9 @@ class Kalman_filter:
         self.DT = t - self.t0
         self.t0 = t
         self.omega = (phi - self.oldphi) / self.DT
-        u = np.array([[v, self.omega]])
-        z = np.array([[x, y]])
+        self.oldphi = phi
+        u = np.array([[v], [self.omega]])
+        z = np.array([[x], [y]])
         self.xEst = self.Kalman_update(z, u)
         return self.xEst
 
