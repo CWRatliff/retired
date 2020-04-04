@@ -9,7 +9,11 @@ import serial
 import math
 from roboclaw import Roboclaw
 
-bias = 60
+#bias = 60
+lfbias = 65
+lrbias = 60
+rrbias = 57
+rfbias = 61
 left_limit = -36
 right_limit = 36
 
@@ -45,10 +49,10 @@ class motor_driver_ada:
         self.d3 = 10.5          #mid axle to rear axle
         self.d4 = 10.073        #C/L to mid wheels
 
-        self.fl_motor.angle = bias
-        self.fr_motor.angle = bias
-        self.bl_motor.angle = bias
-        self.br_motor.angle = bias
+        self.fl_motor.angle = rfbias
+        self.fr_motor.angle = lfbias
+        self.bl_motor.angle = lrbias
+        self.br_motor.angle = rrbias
 
     def diag(self):
         print("servo br ="+str(self.br_motor.angle))
@@ -110,10 +114,10 @@ class motor_driver_ada:
 # SERVO MOTORS ARE COUNTER CLOCKWISE
 # left turn
         if steer < 0:
-            self.fl_motor.angle = bias - steer
-            self.fr_motor.angle = bias - phi
-            self.bl_motor.angle = bias + steer
-            self.br_motor.angle = bias + phi
+            self.fl_motor.angle = lfbias - steer
+            self.fr_motor.angle = rfbias - phi
+            self.bl_motor.angle = lrbias + steer
+            self.br_motor.angle = rrbias + phi
             self.turn_motor(0x80, vel, voc, 1)          #RC 1 - fr, rm
             self.turn_motor(0x81, vel, voc, vic)        #RC 2 - br, bl
             self.turn_motor(0x82, vel, vim, vic)        #RC 3 - lm, fl
@@ -122,10 +126,10 @@ class motor_driver_ada:
 
 #right turn
         elif steer > 0:
-            self.fl_motor.angle = bias - phi
-            self.fr_motor.angle = bias - steer
-            self.bl_motor.angle = bias + phi
-            self.br_motor.angle = bias + steer
+            self.fl_motor.angle = lfbias - phi
+            self.fr_motor.angle = rfbias - steer
+            self.bl_motor.angle = lrbias + phi
+            self.br_motor.angle = rrbias + steer
             self.turn_motor(0x80, vel, vic, vim)
             self.turn_motor(0x81, vel, vic, voc)
             self.turn_motor(0x82, vel, 1, voc)
@@ -134,10 +138,10 @@ class motor_driver_ada:
 
 #straight ahead
         else:
-            self.fl_motor.angle = bias
-            self.fr_motor.angle = bias
-            self.bl_motor.angle = bias
-            self.br_motor.angle = bias
+            self.fl_motor.angle = lfbias
+            self.fr_motor.angle = rfbias
+            self.bl_motor.angle = lrbias
+            self.br_motor.angle = rrbias
             self.turn_motor(0x80, vel, 1, 1)
             self.turn_motor(0x81, vel, 1, 1)
             self.turn_motor(0x82, vel, 1, 1)
