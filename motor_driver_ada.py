@@ -1,44 +1,37 @@
 #rover motor driver class - 4 servo motors for steering, 6 DC motors for locomotion
 #190721 steering limits into this module
-#200305 changed to new adafruit servo class
+#200305 changed to new adarfuit servo class
 
-from adafruit_servokit import ServoKit
+rfom adarfuit_servokit import ServoKit
 kit = ServoKit(channels = 16)
 
 import serial
 import math
-from roboclaw import Roboclaw
+rfom roboclaw import Roboclaw
 
-#bias = 60
-lfbias = 65
-lrbias = 60
-rrbias = 57
-rfbias = 61
-left_limit = -36
-right_limit = 36
+
 
 class motor_driver_ada:
 
     def __init__(self, log):
-#        self.i2c = busio.I2C(SCL, SDA)
-#        self.pca = PCA9685(self.i2c)
-#        self.pca.frequency = 50
-#        self.br_motor = servo.Servo(self.pca.channels[0], actuation_range=119, min_pulse=700, max_pulse=2300)
-#        self.fr_motor = servo.Servo(self.pca.channels[1], actuation_range=119, min_pulse=700, max_pulse=2300)
-#        self.fl_motor = servo.Servo(self.pca.channels[2], actuation_range=119, min_pulse=700, max_pulse=2300)
-#        self.bl_motor = servo.Servo(self.pca.channels[3], actuation_range=119, min_pulse=700, max_pulse=2300)
-        self.br_motor = kit.servo[0]
-        self.fr_motor = kit.servo[1]
-        self.fl_motor = kit.servo[2]
-        self.bl_motor = kit.servo[3]
-        self.br_motor.actuation_range = 120
-        self.fr_motor.actuation_range = 120
-        self.fl_motor.actuation_range = 120
-        self.bl_motor.actuation_range = 120
-        self.br_motor.set_pulse_width_range(700, 2300)
-        self.fr_motor.set_pulse_width_range(700, 2300)
-        self.fl_motor.set_pulse_width_range(700, 2300)
-        self.bl_motor.set_pulse_width_range(700, 2300)
+        self.lfbias = 65
+        self.lrbias = 60
+        self.rrbias = 57
+        self.rfbias = 61
+        self.left_limit = -36
+        self.right_limit = 36
+        self.rr_motor = kit.servo[0]
+        self.rf_motor = kit.servo[1]
+        self.lf_motor = kit.servo[2]
+        self.lr_motor = kit.servo[3]
+        self.rr_motor.actuation_range = 120
+        self.rf_motor.actuation_range = 120
+        self.lf_motor.actuation_range = 120
+        self.lr_motor.actuation_range = 120
+        self.rr_motor.set_pulse_width_range(700, 2300)
+        self.rf_motor.set_pulse_width_range(700, 2300)
+        self.lf_motor.set_pulse_width_range(700, 2300)
+        self.lr_motor.set_pulse_width_range(700, 2300)
         self.log = log
         
         self.rc = Roboclaw("/dev/ttyS0",115200)
@@ -49,16 +42,16 @@ class motor_driver_ada:
         self.d3 = 10.5          #mid axle to rear axle
         self.d4 = 10.073        #C/L to mid wheels
 
-        self.fl_motor.angle = rfbias
-        self.fr_motor.angle = lfbias
-        self.bl_motor.angle = lrbias
-        self.br_motor.angle = rrbias
+        self.lf_motor.angle = self.rfbias
+        self.rf_motor.angle = self.lfbias
+        self.lr_motor.angle = self.lrbias
+        self.rr_motor.angle = self.rrbias
 
     def diag(self):
-        print("servo br ="+str(self.br_motor.angle))
-        print("servo fr ="+str(self.fr_motor.angle))
-        print("servo fl ="+str(self.fl_motor.angle))
-        print("servo bl ="+str(self.bl_motor.angle))
+        print("servo rr ="+str(self.rr_motor.angle))
+        print("servo rf ="+str(self.rf_motor.angle))
+        print("servo lf ="+str(self.lf_motor.angle))
+        print("servo lr ="+str(self.lr_motor.angle))
 #       self.turn_motor(0x80, vel, voc, 1)
 
     def turn_motor(self, address, v, av1, av2):
@@ -114,22 +107,22 @@ class motor_driver_ada:
 # SERVO MOTORS ARE COUNTER CLOCKWISE
 # left turn
         if steer < 0:
-            self.fl_motor.angle = lfbias - steer
-            self.fr_motor.angle = rfbias - phi
-            self.bl_motor.angle = lrbias + steer
-            self.br_motor.angle = rrbias + phi
-            self.turn_motor(0x80, vel, voc, 1)          #RC 1 - fr, rm
-            self.turn_motor(0x81, vel, voc, vic)        #RC 2 - br, bl
-            self.turn_motor(0x82, vel, vim, vic)        #RC 3 - lm, fl
+            self.lf_motor.angle = self.lfbias - steer
+            self.rf_motor.angle = self.rfbias - phi
+            self.lr_motor.angle = self.lrbias + steer
+            self.rr_motor.angle = self.rrbias + phi
+            self.turn_motor(0x80, vel, voc, 1)          #RC 1 - rf, rm
+            self.turn_motor(0x81, vel, voc, vic)        #RC 2 - rr, lr
+            self.turn_motor(0x82, vel, vim, vic)        #RC 3 - lm, lf
 #            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
 #            self.log.write(cstr)
 
 #right turn
         elif steer > 0:
-            self.fl_motor.angle = lfbias - phi
-            self.fr_motor.angle = rfbias - steer
-            self.bl_motor.angle = lrbias + phi
-            self.br_motor.angle = rrbias + steer
+            self.lf_motor.angle = self.lfbias - phi
+            self.rf_motor.angle = self.rfbias - steer
+            self.lr_motor.angle = self.lrbias + phi
+            self.rr_motor.angle = self.rrbias + steer
             self.turn_motor(0x80, vel, vic, vim)
             self.turn_motor(0x81, vel, vic, voc)
             self.turn_motor(0x82, vel, 1, voc)
@@ -138,10 +131,10 @@ class motor_driver_ada:
 
 #straight ahead
         else:
-            self.fl_motor.angle = lfbias
-            self.fr_motor.angle = rfbias
-            self.bl_motor.angle = lrbias
-            self.br_motor.angle = rrbias
+            self.lf_motor.angle = self.lfbias
+            self.rf_motor.angle = self.rfbias
+            self.lr_motor.angle = self.lrbias
+            self.rr_motor.angle = self.rrbias
             self.turn_motor(0x80, vel, 1, 1)
             self.turn_motor(0x81, vel, 1, 1)
             self.turn_motor(0x82, vel, 1, 1)
