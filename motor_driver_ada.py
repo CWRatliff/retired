@@ -1,13 +1,15 @@
 #rover motor driver class - 4 servo motors for steering, 6 DC motors for locomotion
 #190721 steering limits into this module
 #200305 changed to new adarfuit servo class
+#200404 used 'D' hubs and individual biases
+#200405 corrected actual motor to port mapping
 
-rfom adarfuit_servokit import ServoKit
+from adafruit_servokit import ServoKit
 kit = ServoKit(channels = 16)
 
 import serial
 import math
-rfom roboclaw import Roboclaw
+from roboclaw import Roboclaw
 
 
 
@@ -79,10 +81,10 @@ class motor_driver_ada:
 # based on speed & steer, command all motors
     def motor(self, speed, steer):
 #        print("Motor speed, steer "+str(speed)+", "+str(steer))
-        if (steer < left_limit):
-            steer = left_limit
-        if (steer > right_limit):
-            steer = right_limit
+        if (steer < self.left_limit):
+            steer = self.left_limit
+        if (steer > self.right_limit):
+            steer = self.right_limit
 #        vel = speed * 1.27
         vel = speed * 1.26
         voc = 0
@@ -112,8 +114,8 @@ class motor_driver_ada:
             self.lr_motor.angle = self.lrbias + steer
             self.rr_motor.angle = self.rrbias + phi
             self.turn_motor(0x80, vel, voc, 1)          #RC 1 - rf, rm
-            self.turn_motor(0x81, vel, voc, vic)        #RC 2 - rr, lr
-            self.turn_motor(0x82, vel, vim, vic)        #RC 3 - lm, lf
+            self.turn_motor(0x81, vel, vim, vic)        #RC 2 - lm, lf
+            self.turn_motor(0x82, vel, voc, vic)        #RC 3 - rr, lr
 #            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
 #            self.log.write(cstr)
 
@@ -124,8 +126,11 @@ class motor_driver_ada:
             self.lr_motor.angle = self.lrbias + phi
             self.rr_motor.angle = self.rrbias + steer
             self.turn_motor(0x80, vel, vic, vim)
-            self.turn_motor(0x81, vel, vic, voc)
-            self.turn_motor(0x82, vel, 1, voc)
+            self.turn_motor(0x81, vel, 1, voc)
+            self.turn_motor(0x82, vel, vic, voc)
+            print("80 vic, vim ",vic,vim)
+            print("81 vic, voc ",vic,voc)
+            print("82 vom, voc ", 1, voc)
 #            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
 #            self.log.write(cstr)
 
