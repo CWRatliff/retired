@@ -2,6 +2,7 @@
 //190701 - keypad initial code
 //190714 - debounce for ZERO, STOP, COMPASS
 //190726 - keypad instead of xbox
+//200406 - diagnostic cmds
 
 #include <Keypad.h>
 
@@ -32,12 +33,14 @@ Adafruit_LiquidCrystal lcd(0);
 //  2     19 rx1
 //  3     18 tx1
 
-#define DIRECTION   'D'     // one digit basic tandby commands
+#define DIAGNOSTIC  'T'     // command a rover diagnostic
+#define DIRECTION   'D'     // one digit basic standby commands
 #define EXECUTE     'E'     // execute autopilot maneover
 #define FUNCTION    'F'     // multi digit input
 
 char  inpt;
 
+int   diagflag = FALSE;
 int   exeflag = FALSE;
 int   lbflag = FALSE;
 int   lbcount = 0;
@@ -102,6 +105,8 @@ void setup(){
   lcd.begin(20, 4);
   lcd.clear();
   Serial1.begin(9600);        // Xbee on hardware port
+  delay(100);
+   xmit2num(FUNCTION, '9', '9');             // ping, were alive
 
     lcd.setCursor(0, 0);
     lcd.print("Spd: ");
@@ -116,7 +121,6 @@ void setup(){
     lcd.setCursor(0, 3);
     lcd.print("L/L: ");
 
-//   xmit('*');             // ping, were alive
 }
 //=========================================================================
 void loop() {
@@ -151,28 +155,22 @@ void loop() {
     if (ibuffer[0] == 'v') {
       lcd.setCursor(5, 0);
       lcdout(str);                        // print speed
-      lcd.print(" ");
       }
     if (ibuffer[0] == 's') {
       lcd.setCursor(5, 1);
       lcdout(str);                        // print steering
-      lcd.print(" ");
       }
     if (ibuffer[0] == 'h') {
       lcd.setCursor(5, 2);
       lcdout(str);                        // print heading
-      lcd.print(" ");
       }
     if (ibuffer[0] == 'd') {
       lcd.setCursor(15, 1);
       lcdout(str);                        // print distance to wpt
-      
-      lcd.print(" ");
       }
     if (ibuffer[0] == 'c') {
       lcd.setCursor(15, 2);
       lcdout(str);                        // print course to wpt
-      lcd.print(" ");
       }
     if (ibuffer[0] == 'a') {              // auto/stby status
       lcd.setCursor(16, 0);
@@ -199,36 +197,50 @@ void loop() {
       Serial.print(kpad);
 
       if (kpad == '*') {
+        diagflag = FALSE;
         exeflag = TRUE;
         lbflag = FALSE;
         }
         
       else if (kpad == '#') {
+        diagflag = FALSE;
         lbflag = TRUE;
         lbcount = 0;
         exeflag = FALSE;
         Serial.print("hatch found");
         }
-        
-      if (exeflag && kpad >= '0' && kpad <= '9') {
-        xmitnum(EXECUTE, kpad);
-        exeflag = FALSE;
-        }
-        
-      else if (lbflag && kpad >= '0' && kpad <= '9') {
-        if (lbcount == 0) {
-          lb1 = kpad;
-          lbcount++;
-          }
-        else if (lbcount == 1) {
-          xmit2num(FUNCTION, lb1, kpad);
-          lbflag == FALSE;
-          }
-        }
 
-      else if (kpad >= '0' && kpad <= '9') {
-        Serial.print("bare key");
-        xmitnum(DIRECTION, kpad);
+      else if (kpad == 'D') {
+        diagflag = TRUE;
+        exeflag = FALSE;
+        lbflag = FALSE;
+        }
+      if (kpad >= '0' && kpad <= '9') {        
+        if (exeflag && kpad >= '0' && kpad <= '9') {
+          xmitnum(EXECUTE, kpad);
+          exeflag = FALSE;
+          }
+          
+        else if (diagflag && kpad >= '0' && kpad <= '9') {
+          xmitnum(DIAGNOSTIC, kpad);
+          diagflag = FALSE;
+          }
+          
+        else if (lbflag && kpad >= '0' && kpad <= '9') {
+          if (lbcount == 0) {
+            lb1 = kpad;
+            lbcount++;
+            }
+          else if (lbcount == 1) {
+            xmit2num(FUNCTION, lb1, kpad);
+            lbflag = FALSE;
+            }
+          }
+  
+        else {
+          Serial.print("bare key");
+          xmitnum(DIRECTION, kpad);
+          }
         }
 
 //    if ((millis() - epoch) > 1000) {}
