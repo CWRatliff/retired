@@ -33,9 +33,9 @@ class Kalman_filter:
                       [self.DT * math.sin(x[2, 0]), 0],
                       [0, self.DT],
                       [1.0, 0.0]])
-        print("motion B mat",B)
+#        print("motion B mat",B)
         x = F @ x + B @ u
-        print("motion x(t+1)", x)
+#        print("motion x(t+1)", x)
         return x
     
     # x - state vector
@@ -83,7 +83,7 @@ class Kalman_filter:
         y = z - zPred
         S = jH @ pPred @ jH.T + self.R
         K = pPred @ jH.T @ np.linalg.inv(S)
-        print ("Kdoty ",K.dot(y))
+#        print ("Kdoty ",K.dot(y))
         self.xEst = xPred + K @ y
         self.pEst = (np.eye(len(self.xEst)) - K @ jH) @ pPred
         return self.xEst
@@ -117,5 +117,16 @@ class Kalman_filter:
         u = np.array([[v], [self.omega]])
         z = np.array([[x], [y]])
         self.xEst = self.Kalman_update(z, u)
+        pxy = self.pEst[0:2, 0:2]
+        print("cov matrix ", self.pEst)
+#        print("cov matrix ", pxy)
+        eigval, eigvec = np.linalg.eig(pxy)
+        print("eigs",eigval, eigvec)
+        print("error ellipse",math.sqrt(eigval[0]),math.sqrt(eigval[1]))
+        bigind = 0
+        if eigval[0] < eigval[1]:
+            bigind = 1
+        angle = math.atan2(eigvec[bigind, 1], eigvec[bigind, 0])
+        print ("angle",(450 - math.degrees(angle))%360)
         return self.xEst
 

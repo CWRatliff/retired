@@ -67,6 +67,7 @@ flonsec = 0.0
 latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
+accgps = 0                              # grps accuracy in ft
 spdfactor = .008                        # convert speed percentage to ft/sec ref BOR:3/17
 #d1 = 7.254
 #d3 = 10.5
@@ -107,7 +108,7 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-version = "Rover 1.0 200331\n"
+version = "Rover 1.0 200409\n"
 print(version)
 log = open("logfile.txt", 'a')
 log.write(version)
@@ -290,6 +291,11 @@ def star_commands(xchr):
         azimuth += 180
         azimuth %= 360
     return
+#================================================================
+def diag_commands(xchr):
+    if (xchr == '0'):
+        robot.motor_speed()
+    return
 
 #while True:                             #purge xbee
 #    chr = int(bus.read_byte(addr))
@@ -406,6 +412,8 @@ try:
                             ilatsec = x
                         elif xchr == 'N':
                             ilonsec = x
+                        elif xchr == 'A':
+                            accgps = x * .00328084   #cvt mm to feet
 
                     except ValueError:
                         print("bad data" + cbuff)
@@ -446,6 +454,10 @@ try:
                                 turn = (h * math.cos(alpha) + d1) / 12.0
                                 omega = v /turn
                             '''
+                            tt=time.time()
+                            ostr = "time: " + str(tt)
+                            print(ostr)
+                            log.write(ostr + '\n')
                             ostr = "raw L/L:" + str(ilatsec) + "/" + str(ilonsec)
                             print(ostr)
                             log.write(ostr+"\n")
@@ -466,7 +478,7 @@ try:
                             ostr = "Filtered hdg: " + str(fhdg)
                             print(ostr)
                             log.write(ostr+"\n")
-                            ostr = "Filtered speed: " + str(xEst[3,0] / spdfactor)
+                            ostr = "Filtered speed: " + str(xEst[3,0])
                             print (ostr)
                             log.write(ostr + "\n")
                             dtg = distto(flatsec, flonsec, destlat, destlon)
@@ -474,19 +486,29 @@ try:
                             tty.write(cstr.encode("utf-8"))
                             print(cstr)
                             log.write(cstr + "\n")
-                            azimuth = fromto(flatsec, flonsec, destlat, destlon)
+                            az = fromto(flatsec, flonsec, destlat, destlon)
+                            cstr = "Gps azimuth %5.1f}" % az
+                            print(cstr)
+                            log.write(cstr + "\n")
+                            
+                            if (dtg > (2 * accgps)):
+                                azimuth = fromto(ilatsec, ilonsec, destlat, destlon)
                             cstr = "{c%5.1f}" % azimuth
                             tty.write(cstr.encode("utf-8"))
                             print(cstr)
                             log.write(cstr + "\n")
 
-                            cstr = "{lt%5.3f}" % flatsec    #send to controller
+                            xtrk = pointline(startlat, startlon, \
+                                destlat, destlon, flatsec, flonsec, wptdist) 
+                            cstr = "{lt%5.3f}" % xtrk   #send to controller
                             tty.write(cstr.encode("utf-8"))
-                            cstr = "{ln%5.3f}" % flonsec
-                            tty.write(cstr.encode("utf-8"))
+#                            cstr = "{lt%5.3f}" % flatsec    #send to controller
+#                            tty.write(cstr.encode("utf-8"))
+#                            cstr = "{ln%5.3f}" % flonsec
+#                            tty.write(cstr.encode("utf-8"))
                         
                             if (dtg < 3.0):             # a foot from waypoint
-                                 if rteflag:
+                                if rteflag:
                                     rtseg += 1
                                     wpt = routes[route][rtseg]
                                     if (wpt == 0):
@@ -509,21 +531,19 @@ try:
                                     cstr = "{aWp" + str(wpt) + "}"
                                     tty.write(cstr.encode("utf-8"))
 
-                                 else:
+                                else:
                                     cstr = "{aStby}"
                                     tty.write(cstr.encode("utf-8"))
                                     wptflag =  False
                                     speed = 0
 
-                            if (rteflag or wptflag):
-                                nowhdg = fromto(flatsec, flonsec, destlat, destlon)
-                                angle = nowhdg - azimuth
-                                dst = pointline(startlat, startlon, \
-                                    destlat, destlon, flatsec, flonsec, wptdist) 
-                                if (dst > 3 or angle > 3):
-                                    compass_adjustment -= 1
-                                if (dst < -3 or angle < -3):
-                                    compass_adjustment += 1
+#                             if (rteflag or wptflag):
+#                                 if (dtg > (2 * accgps)):
+#                                     nowhdg = fromto(flatsec, flonsec, destlat, destlon)
+#                                     angle = nowhdg - azimuth
+#                                 xtrk = pointline(startlat, startlon, \
+#                                     destlat, destlon, flatsec, flonsec, wptdist) 
+
                         #end if auto
                                 
                     steer = int(azimuth - hdg)

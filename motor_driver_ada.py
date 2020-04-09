@@ -3,6 +3,7 @@
 #200305 changed to new adarfuit servo class
 #200404 used 'D' hubs and individual biases
 #200405 corrected actual motor to port mapping
+#N.B. RC 0x81 & 0x82 may be exchenged for 'Spot 2'
 
 from adafruit_servokit import ServoKit
 kit = ServoKit(channels = 16)
@@ -16,12 +17,17 @@ from roboclaw import Roboclaw
 class motor_driver_ada:
 
     def __init__(self, log):
-        self.lfbias = 65
+        self.lfbias = 65        # experimentally determined for 'Spot 2'
         self.lrbias = 60
         self.rrbias = 57
         self.rfbias = 61
         self.left_limit = -36
         self.right_limit = 36
+        self.d1 = 7.254         #C/L to corner wheels
+        self.d2 = 10.5          #mid axle to fwd axle
+        self.d3 = 10.5          #mid axle to rear axle
+        self.d4 = 10.073        #C/L to mid wheels
+        
         self.rr_motor = kit.servo[0]
         self.rf_motor = kit.servo[1]
         self.lf_motor = kit.servo[2]
@@ -39,15 +45,11 @@ class motor_driver_ada:
         self.rc = Roboclaw("/dev/ttyS0",115200)
         i = self.rc.Open()
 
-        self.d1 = 7.254         #C/L to corner wheels
-        self.d2 = 10.5          #mid axle to fwd axle
-        self.d3 = 10.5          #mid axle to rear axle
-        self.d4 = 10.073        #C/L to mid wheels
-
         self.lf_motor.angle = self.rfbias
         self.rf_motor.angle = self.lfbias
         self.lr_motor.angle = self.lrbias
         self.rr_motor.angle = self.rrbias
+        self.stop_all()
 
     def diag(self):
         print("servo rr ="+str(self.rr_motor.angle))
@@ -128,9 +130,9 @@ class motor_driver_ada:
             self.turn_motor(0x80, vel, vic, vim)
             self.turn_motor(0x81, vel, 1, voc)
             self.turn_motor(0x82, vel, vic, voc)
-            print("80 vic, vim ",vic,vim)
-            print("81 vic, voc ",vic,voc)
-            print("82 vom, voc ", 1, voc)
+#            print("80 vic, vim ",vic,vim)
+#            print("81 vic, voc ",vic,voc)
+#            print("82 vom, voc ", 1, voc)
 #            cstr = "v, vout, vin %f %f %f\n" % (vel, voc, vic)
 #            self.log.write(cstr)
 
