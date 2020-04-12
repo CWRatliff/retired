@@ -57,7 +57,7 @@ hdg = 0
 oldsteer = 500
 oldspeed = 500
 oldhdg = 500
-compass_adjustment = 290                # test 200330
+compass_adjustment = 295                # test 200330
 ilatsec = 0.0                           # input from GPS hardware
 ilonsec = 0.0
 startlat = 0.0
@@ -75,8 +75,7 @@ spdfactor = .008                        # convert speed percentage to ft/sec ref
 left = False
 left_limit = -36
 right_limit = 36
-gpsepoch = time.time()
-imuepoch = time.time()
+
 auto = False
 flag = False
 rteflag = False
@@ -108,7 +107,7 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-version = "Rover 1.0 200409\n"
+version = "Rover 1.0 200411\n"
 print(version)
 log = open("logfile.txt", 'a')
 log.write(version)
@@ -384,6 +383,9 @@ try:
                             wptflag = True
                             firstwpt = routes[wpt][0]
                             wpt = firstwpt
+                        else:
+                            pass
+                        
                         if (wpt >= 10 and wpt <= 24):
                             startlat = ilatsec
                             startlon = ilonsec
@@ -414,6 +416,8 @@ try:
                             ilonsec = x
                         elif xchr == 'A':
                             accgps = x * .00328084   #cvt mm to feet
+                        else:
+                            pass
 
                     except ValueError:
                         print("bad data" + cbuff)
@@ -436,106 +440,110 @@ try:
                     speed = 0
                     exit()
                     
+                 else:
+                    pass
+                    
 #======================================================================
-                 if (auto):
+        if (auto):
                      
-                    if (time.time() > (epoch + 1)):     #once per sec
-                        epoch = time.time()
+            if (time.time() > (epoch + 1)):     #once per sec
+                epoch = time.time()
 
-                        if wptflag:
-                            v = speed * spdfactor
-                            phi =math.radians((450-hdg)%360)
-                            '''
-                            if (steer == 0):
-                                omega = 0
-                            else:
-                                alpha = math.radians(steer)
-                                h = d3/math.sin(alpha)
-                                turn = (h * math.cos(alpha) + d1) / 12.0
-                                omega = v /turn
-                            '''
-                            tt=time.time()
-                            ostr = "time: " + str(tt)
-                            print(ostr)
-                            log.write(ostr + '\n')
-                            ostr = "raw L/L:" + str(ilatsec) + "/" + str(ilonsec)
-                            print(ostr)
-                            log.write(ostr+"\n")
-                            ostr = "raw hdg: " + str(hdg)
-                            print(ostr)
-                            log.write(ostr+"\n")
-                            ostr = "raw speed: " + str(v)
-                            print (ostr)
-                            log.write(ostr + "\n")
-                            xEst = Kfilter.Kalman_step(time.time(), ilonsec * lonfeet, \
-                                    ilatsec * latfeet, phi, v)
-                            flonsec = xEst[0, 0] / lonfeet
-                            flatsec = xEst[1, 0] / latfeet
-                            fhdg= (450 - math.degrees(xEst[2,0]))%360
-                            ostr = "filtered L/L:" + str(flatsec) + "/" + str(flonsec)
-                            print(ostr)
-                            log.write(ostr+"\n")
-                            ostr = "Filtered hdg: " + str(fhdg)
-                            print(ostr)
-                            log.write(ostr+"\n")
-                            ostr = "Filtered speed: " + str(xEst[3,0])
-                            print (ostr)
-                            log.write(ostr + "\n")
-                            dtg = distto(flatsec, flonsec, destlat, destlon)
-                            cstr = "{d%5.1f}" % dtg
-                            tty.write(cstr.encode("utf-8"))
-                            print(cstr)
-                            log.write(cstr + "\n")
-                            az = fromto(flatsec, flonsec, destlat, destlon)
-                            cstr = "Gps azimuth %5.1f}" % az
-                            print(cstr)
-                            log.write(cstr + "\n")
-                            
-                            if (dtg > (2 * accgps)):
-                                azimuth = fromto(ilatsec, ilonsec, destlat, destlon)
-                            cstr = "{c%5.1f}" % azimuth
-                            tty.write(cstr.encode("utf-8"))
-                            print(cstr)
-                            log.write(cstr + "\n")
+                if wptflag:
+                    v = speed * spdfactor
+                    phi =math.radians((450-hdg)%360)
+                    '''
+                    if (steer == 0):
+                        omega = 0
+                    else:
+                        alpha = math.radians(steer)
+                        h = d3/math.sin(alpha)
+                        turn = (h * math.cos(alpha) + d1) / 12.0
+                        omega = v /turn
+                    '''
+                    tt=time.time()
+                    ostr = "time: " + str(tt)
+                    print(ostr)
+                    log.write(ostr + '\n')
+                    ostr = "raw L/L:" + str(ilatsec) + "/" + str(ilonsec)
+                    print(ostr)
+                    log.write(ostr+"\n")
+                    ostr = "raw hdg: " + str(hdg)
+                    print(ostr)
+                    log.write(ostr+"\n")
+                    ostr = "raw speed: " + str(v)
+                    print (ostr)
+                    log.write(ostr + "\n")
+                    xEst = Kfilter.Kalman_step(time.time(), ilonsec * lonfeet, \
+                            ilatsec * latfeet, phi, v)
+                    flonsec = xEst[0, 0] / lonfeet
+                    flatsec = xEst[1, 0] / latfeet
+                    fhdg= (450 - math.degrees(xEst[2,0]))%360
+                    ostr = "filtered L/L:" + str(flatsec) + "/" + str(flonsec)
+                    print(ostr)
+                    log.write(ostr+"\n")
+                    ostr = "Filtered hdg: " + str(fhdg)
+                    print(ostr)
+                    log.write(ostr+"\n")
+                    ostr = "Filtered speed: " + str(xEst[3,0])
+                    print (ostr)
+                    log.write(ostr + "\n")
+                    dtg = distto(flatsec, flonsec, destlat, destlon)
+                    cstr = "{d%5.1f}" % dtg
+                    tty.write(cstr.encode("utf-8"))
+                    print(cstr)
+                    log.write(cstr + "\n")
+                    az = fromto(flatsec, flonsec, destlat, destlon)
+                    cstr = "Gps azimuth %5.1f}" % az
+                    print(cstr)
+                    log.write(cstr + "\n")
+                    
+                    if (dtg > (2 * accgps)):
+                        azimuth = fromto(ilatsec, ilonsec, destlat, destlon)
+                    cstr = "{c%5.1f}" % azimuth
+                    tty.write(cstr.encode("utf-8"))
+                    print(cstr)
+                    log.write(cstr + "\n")
 
-                            xtrk = pointline(startlat, startlon, \
-                                destlat, destlon, flatsec, flonsec, wptdist) 
-                            cstr = "{lt%5.3f}" % xtrk   #send to controller
-                            tty.write(cstr.encode("utf-8"))
+                    xtrk = pointline(startlat, startlon, \
+                        destlat, destlon, flatsec, flonsec, wptdist) 
+                    cstr = "{lt%5.3f}" % xtrk   #send to controller
+                    tty.write(cstr.encode("utf-8"))
+                    log.write("Xtrk "+cstr+'\n')
 #                            cstr = "{lt%5.3f}" % flatsec    #send to controller
 #                            tty.write(cstr.encode("utf-8"))
 #                            cstr = "{ln%5.3f}" % flonsec
 #                            tty.write(cstr.encode("utf-8"))
-                        
-                            if (dtg < 3.0):             # a foot from waypoint
-                                if rteflag:
-                                    rtseg += 1
-                                    wpt = routes[route][rtseg]
-                                    if (wpt == 0):
-                                        cstr = "{Stby}"
-                                        tty.write(cstr.encode("utf-8"))
-                                        wptflg = False
-                                        rteflag = False
-                                        speed = 0
-                                    startlat = ilatsec         #dup'ed code
-                                    startlon = ilonsec
-                                    destlat = waypts[wpt][0]
-                                    destlon = waypts[wpt][1]
-                                    ostr = "wpt: %d %5.3f/%5.3f", (wpt, destlat, destlon)
-                                    print (ostr)
-                                    log.write(ostr+"\n")
-                                    azimuth = fromto(startlat, startlon,\
-                                        destlat, destlon)
-                                    wptdist = distto(startlat, startlon, \
-                                        destlat, destlon)
-                                    cstr = "{aWp" + str(wpt) + "}"
-                                    tty.write(cstr.encode("utf-8"))
+                
+                    if (dtg < 3.0):             # a foot from waypoint
+                        if rteflag:
+                            rtseg += 1
+                            wpt = routes[route][rtseg]
+                            if (wpt == 0):
+                                cstr = "{Stby}"
+                                tty.write(cstr.encode("utf-8"))
+                                wptflg = False
+                                rteflag = False
+                                speed = 0
+                            startlat = ilatsec         #dup'ed code
+                            startlon = ilonsec
+                            destlat = waypts[wpt][0]
+                            destlon = waypts[wpt][1]
+                            ostr = "wpt: %d %5.3f/%5.3f", (wpt, destlat, destlon)
+                            print (ostr)
+                            log.write(ostr+"\n")
+                            azimuth = fromto(startlat, startlon,\
+                                destlat, destlon)
+                            wptdist = distto(startlat, startlon, \
+                                destlat, destlon)
+                            cstr = "{aWp" + str(wpt) + "}"
+                            tty.write(cstr.encode("utf-8"))
 
-                                else:
-                                    cstr = "{aStby}"
-                                    tty.write(cstr.encode("utf-8"))
-                                    wptflag =  False
-                                    speed = 0
+                        else:
+                            cstr = "{aStby}"
+                            tty.write(cstr.encode("utf-8"))
+                            wptflag =  False
+                            speed = 0
 
 #                             if (rteflag or wptflag):
 #                                 if (dtg > (2 * accgps)):
@@ -544,40 +552,40 @@ try:
 #                                 xtrk = pointline(startlat, startlon, \
 #                                     destlat, destlon, flatsec, flonsec, wptdist) 
 
-                        #end if auto
+                #end if auto
                                 
-                    steer = int(azimuth - hdg)
-                    if (steer < -180):
-                        steer = steer + 360
-                    elif (steer > 180):
-                        steer = steer - 360
-                    if (abs(steer) == 180):
-                        if left:
-                            steer = -180
-                        else:
-                            steer = 180
-                    robot.motor(speed, steer)
+                steer = int(azimuth - hdg)
+                if (steer < -180):
+                    steer = steer + 360
+                elif (steer > 180):
+                    steer = steer - 360
+                if (abs(steer) == 180):
+                    if left:
+                        steer = -180
+                    else:
+                        steer = 180
+                robot.motor(speed, steer)
                         
-                 if (hdg != oldhdg):
+                if (hdg != oldhdg):
                     cstr = "{h%3d}" % hdg
                     tty.write(cstr.encode("utf-8"))
                     oldhdg = hdg
                     print(cstr)
                     log.write(cstr + "\n")
-                 if (speed != oldspeed):
+                if (speed != oldspeed):
                     cstr = "{v%4d}" % speed
                     tty.write(cstr.encode("utf-8"))
                     oldspeed = speed
                     print(cstr)
                     log.write(cstr + "\n")
-                 if (steer != oldsteer):
+                if (steer != oldsteer):
                     cstr = "{s%4d}" % steer
                     tty.write(cstr.encode("utf-8"))
                     oldsteer = steer
                     print(cstr)
                     log.write(cstr + "\n")
 
-                 epoch = time.time()
+                epoch = time.time()
 
 
             flag = False
