@@ -275,14 +275,10 @@ def star_commands(xchr):
         azimuth %= 360
     elif (xchr == '4'):               #adj compass
         compass_adjustment -= 1
-        ostr = "Compass bias "+str(compass_adjustment)
-        print (ostr)
-        log.write(ostr+'\n')
+        logit("Compass bias "+str(compass_adjustment))
     elif (xchr == '6'):               #adj compass
         compass_adjustment += 1
-        ostr = "Compass bias "+str(compass_adjustment)
-        print (ostr)
-        log.write(ostr+'\n')
+        logit("Compass bias "+str(compass_adjustment))
     elif (auto and xchr == '7'):      #left 180 deg
         left = True
         azimuth -= 180
@@ -304,13 +300,15 @@ def logit(cstr):
     log.write(cstr + '\n')
     return
 #=================================================================
+def sendit(cstr):
+    print(cstr)
+    tty.write(cstr.encode("utf-8"))
+    return
+#=================================================================
 
-cstr = "{aStby}"
-tty.write(cstr.encode("utf-8"))
-cstr = "{d----}"
-tty.write(cstr.encode("utf-8"))
-cstr = "{c----}"
-tty.write(cstr.encode("utf-8"))
+sendit("{aStby}")
+sendit("{d----}")
+sendit("{c----}")
 cbuff = ""
 
 try:
@@ -367,12 +365,9 @@ try:
                             wptflag = False
                             rteflag = False
                             auto = False
-                            cstr = "{aStby}"
-                            tty.write(cstr.encode("utf-8"))
-                            cstr = "{d----}"
-                            tty.write(cstr.encode("utf-8"))
-                            cstr = "{c---}"
-                            tty.write(cstr.encode("utf-8"))
+                            sendit("{aStby}")
+                            sendit("{d----}")
+                            sendit("{c---}")
                             speed = 0
                             steer = 0
                             robot.motor(speed, steer)
@@ -397,8 +392,7 @@ try:
                             auto = True
                             wptflag = True
                             epoch = time.time()
-                            cstr = "{aWp" + str(wpt) + "}"
-                            tty.write(cstr.encode("utf-8"))
+                            sendit("{aWp" + str(wpt) + "}")
                             Kfilter.Kalman_start(time.time(), ilonsec * lonfeet, \
                                 ilatsec * latfeet, (math.radians(450-hdg) % 360), \
                                 speed * spdfactor)
@@ -468,27 +462,21 @@ try:
                     logit("Filtered hdg: " + str(fhdg))
                     logit("Filtered speed: " + str(xEst[3,0]))
                     dtg = distto(flatsec, flonsec, destlat, destlon)
-                    cstr = "{d%5.1f}" % dtg
-                    tty.write(cstr.encode("utf-8"))
+                    sendit("{d%5.1f}" % dtg)
                     logit(cstr)
                     az = fromto(flatsec, flonsec, destlat, destlon)
                     logit("Gps azimuth %5.1f}" % az)
                     
                     if (dtg > (2 * accgps)):
                         azimuth = fromto(ilatsec, ilonsec, destlat, destlon)
-                    cstr = "{c%5.1f}" % azimuth
-                    tty.write(cstr.encode("utf-8"))
+                    sendit("{c%5.1f}" % azimuth)
                     logit(cstr)
 
                     xtrk = pointline(startlat, startlon, \
                         destlat, destlon, flatsec, flonsec, wptdist) 
-                    cstr = "{ln%5.3f}" % xtrk   #send to controller
-                    tty.write(cstr.encode("utf-8"))
+                    sendit("{ln%5.3f}" % xtrk)   #send to controller
                     logit(cstr)
-#                            cstr = "{lt%5.3f}" % flatsec    #send to controller
-#                            tty.write(cstr.encode("utf-8"))
-#                            cstr = "{ln%5.3f}" % flonsec
-#                            tty.write(cstr.encode("utf-8"))
+                    sendit("{lt%5.3f}" % accgps)    #send to controller
                 
                     if (dtg < 3.0):             # a foot from waypoint
                         if rteflag:
@@ -509,17 +497,15 @@ try:
                                 destlat, destlon)
                             wptdist = distto(startlat, startlon, \
                                 destlat, destlon)
-                            cstr = "{aWp" + str(wpt) + "}"
-                            tty.write(cstr.encode("utf-8"))
+                            sendit("{aWp" + str(wpt) + "}")
 
                         else:
-                            cstr = "{aStby}"
-                            tty.write(cstr.encode("utf-8"))
+                            sendit("{aStby}")
                             wptflag =  False
                             speed = 0
-                    #endif wptflag
-
-                #endif epoch timer
+                        #endif dtg ===================
+                    #endif wptflag ===================
+                #endif epoch timer ===================
                                 
             steer = int(azimuth - hdg)
             if (steer < -180):
@@ -532,25 +518,23 @@ try:
                 else:
                     steer = 180
             robot.motor(speed, steer)
-            #endif auto
+            #endif auto ===========================
                 
         if (hdg != oldhdg):
-            cstr = "{h%3d}" % hdg
-            tty.write(cstr.encode("utf-8"))
+            sendit("{h%3d}" % hdg)
             oldhdg = hdg
             logit(cstr)
         if (speed != oldspeed):
-            cstr = "{v%4d}" % speed
-            tty.write(cstr.encode("utf-8"))
+            sendit("{v%4d}" % speed)
             oldspeed = speed
             logit(cstr)
         if (steer != oldsteer):
-            cstr = "{s%4d}" % steer
-            tty.write(cstr.encode("utf-8"))
+            sendit("{s%4d}" % steer)
             oldsteer = steer
             logit(cstr)
 
         # endwhile main loop ========================
+    #endtry ======================
 
 finally:
     robot.motor(0,0)
