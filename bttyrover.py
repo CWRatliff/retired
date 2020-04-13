@@ -301,7 +301,6 @@ def logit(cstr):
     return
 #=================================================================
 def sendit(cstr):
-    print(cstr)
     tty.write(cstr.encode("utf-8"))
     return
 #=================================================================
@@ -462,21 +461,26 @@ try:
                     logit("Filtered hdg: " + str(fhdg))
                     logit("Filtered speed: " + str(xEst[3,0]))
                     dtg = distto(flatsec, flonsec, destlat, destlon)
-                    sendit("{d%5.1f}" % dtg)
+                    cstr = "{d%5.1f}" % dtg
+                    sendit(cstr)
                     logit(cstr)
                     az = fromto(flatsec, flonsec, destlat, destlon)
                     logit("Gps azimuth %5.1f}" % az)
                     
                     if (dtg > (2 * accgps)):
                         azimuth = fromto(ilatsec, ilonsec, destlat, destlon)
-                    sendit("{c%5.1f}" % azimuth)
+                    cstr = "{c%5.1f}" % azimuth
+                    sendit(cstr)
                     logit(cstr)
 
                     xtrk = pointline(startlat, startlon, \
                         destlat, destlon, flatsec, flonsec, wptdist) 
-                    sendit("{ln%5.3f}" % xtrk)   #send to controller
+                    cstr = "{ln%5.3f}" % xtrk   #send to controller
+                    sendit(cstr)
                     logit(cstr)
-                    sendit("{lt%5.3f}" % accgps)    #send to controller
+                    cstr = "{lt%5.3f}" % accgps    #send to controller
+                    sendit(cstr)
+                    logit(cstr)
                 
                     if (dtg < 3.0):             # a foot from waypoint
                         if rteflag:
