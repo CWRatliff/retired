@@ -521,15 +521,18 @@ try:
             #endif auto ===========================
                 
         if (hdg != oldhdg):
-            sendit("{h%3d}" % hdg)
+            cstr = "{h%3d}" % hdg
+            sendit(cstr)
             oldhdg = hdg
             logit(cstr)
         if (speed != oldspeed):
-            sendit("{v%4d}" % speed)
+            cstr = "{v%4d}" % speed
+            sendit(cstr)
             oldspeed = speed
             logit(cstr)
         if (steer != oldsteer):
-            sendit("{s%4d}" % steer)
+            cstr = "{s%4d}" % steer
+            sendit(cstr)
             oldsteer = steer
             logit(cstr)
 
