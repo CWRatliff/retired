@@ -59,7 +59,7 @@ hdg = 0
 oldsteer = 500
 oldspeed = 500
 oldhdg = 500
-compass_adjustment = 295                # test 200330
+compass_adjustment = 12                 # Camarillo declination
 ilatsec = 0.0                           # input from GPS hardware
 ilonsec = 0.0
 startlat = 0.0
@@ -70,7 +70,7 @@ latitude = math.radians(34.24)          # Camarillo
 latfeet = 6076.0/60
 lonfeet = -latfeet * math.cos(latitude)
 accgps = 0                              # grps accuracy in ft
-spdfactor = .008                        # convert speed percentage to ft/sec ref BOR:3/17
+spdfactor = .0088                       # convert speed percentage to ft/sec ref BOT:3/17
 #d1 = 7.254
 #d3 = 10.5
 
@@ -105,14 +105,17 @@ waypts=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],
 [18.181, 7.900, "stall ctr"],       #20
 [21.174, 6.110, "E dway start"],    #21
 [22.227, 6.883, "horse gravel"],    #22
-[22.806, 7.303, "trash"],           #23
+[22.846, 7.390, "trash"],           #23
 [22.599, 7.159, "EF east entry"],   #24
 [11,12]]
 
-version = "Rover 1.0 200412\n"
+version = "Rover 1.0 200421\n"
 print(version)
+tme = time.localtime(time.time())
+print (tme)
 log = open("logfile.txt", 'a')
 log.write(version)
+#log.write(tme)
 robot = motor_driver_ada.motor_driver_ada(log)
 Kfilter = cEKF.Kalman_filter()
 port = "/dev/ttyUSB0"
@@ -170,10 +173,9 @@ def simple_commands(xchr):
     elif xchr == '1':                   # 1 - Left
         if (auto):
             azimuth -= 1
+            logit("az set to %d\n" % azimuth)
         else:
             steer -= 1
-            if steer < (left_limit + 1):
-                return
             robot.motor(speed, steer)
             
     elif xchr == '2':                   # 2 - Forward
@@ -184,19 +186,17 @@ def simple_commands(xchr):
     elif xchr == '3':                   # 3 - Right
         if (auto):
             azimuth += 1
+            logit("az set to %d\n" % azimuth)
         else:
             steer += 1
-            if steer > (right_limit + 1):
-                return
             robot.motor(speed, steer)
 
     elif xchr == '4':                   # 4 - Left 5 deg
         if (auto):
             azimuth -= 5
+            logit("az set to %d\n" % azimuth)
         else:
             steer -= 5
-            if steer < (left_limit + 1):
-                steer = left_limit
             robot.motor(speed, steer)
             
     elif xchr == '5':                   # 5 - Steer zero
@@ -213,26 +213,29 @@ def simple_commands(xchr):
 #               time.sleep(0.05)
         steer = 0
         robot.motor(speed, steer)
-        auto = False
+#        auto = False
 
     elif xchr == '6':                   # 6 - Left 5 deg
         if (auto):
             azimuth += 5
+            logit("az set to %d\n" % azimuth)
         else:
             steer += 5
-            if (steer > (right_limit + 1)):
-                steer = right_limit
             robot.motor(speed, steer)
             
     elif xchr == '7':                   # 7 - HAW steer left limit
-        dt = 1
-        if steer > (left_limit + 1):
-            while (steer > left_limit):
-                steer -= dt
-                robot.motor(speed, steer)
+        if (auto):
+            azimuth += left_limit
+            logit("az set to %d\n" % azimuth)
+        else:
+            dt = 1
+            if steer > (left_limit + 1):
+                while (steer > left_limit):
+                    steer -= dt
+                    robot.motor(speed, steer)
 #                    time.sleep(0.05)
-        steer = left_limit
-        robot.motor(speed, steer)
+            steer = left_limit
+            robot.motor(speed, steer)
             
     elif xchr == '8':                   # 8 -  Reverse
         if speed >= -90:
@@ -240,14 +243,18 @@ def simple_commands(xchr):
             robot.motor(speed, steer)
 
     elif xchr == '9':                   # 9 - GEE steer right limit
-        dt = 1
-        if steer < (right_limit - 1):
-            while (steer < right_limit):
-                steer += dt
-                robot.motor(speed, steer)
+        if (auto):
+            azimuth += right_limit
+            logit("az set to %d\n" % azimuth)
+        else:
+            dt = 1
+            if steer < (right_limit - 1):
+                while (steer < right_limit):
+                    steer += dt
+                    robot.motor(speed, steer)
 #                    time.sleep(0.05)
-        steer = right_limit
-        robot.motor(speed, steer)
+            steer = right_limit
+            robot.motor(speed, steer)
     return
 #===================end of D commands
 def star_commands(xchr):
@@ -260,19 +267,21 @@ def star_commands(xchr):
     if (xchr == '0'):                   #standby
         auto = False
         azimuth = hdg
-        cstr = "{aStby}"
-        tty.write(cstr.encode("utf-8"))
+        sendit("{aStby}")
+        logit("Standby")
     elif (auto and xchr == '1'):      #left 90 deg
         azimuth -= 90
         azimuth %= 360
+        logit("az set to %d\n" % azimuth)
     elif (xchr == '2'):               #autopilot on
         auto = True
         azimuth = hdg
-        cstr = "{aAuto}"
-        tty.write(cstr.encode("utf-8"))
+        sendit("{aAuto}")
+        logit("Auto-pilot")
     elif (auto and xchr == '3'):      #right 90 deg
         azimuth += 90
         azimuth %= 360
+        logit("az set to %d\n" % azimuth)
     elif (xchr == '4'):               #adj compass
         compass_adjustment -= 1
         logit("Compass bias "+str(compass_adjustment))
@@ -283,15 +292,19 @@ def star_commands(xchr):
         left = True
         azimuth -= 180
         azimuth %= 360
+        logit("az set to %d\n" % azimuth)
     elif (auto and xchr == '9'):      #right 180 deg
         left = False
         azimuth += 180
         azimuth %= 360
+        logit("az set to %d\n" % azimuth)
     return
 #================================================================
 def diag_commands(xchr):
     if (xchr == '0'):
+        logit("diagnostic #1 =======================")
         robot.motor_speed()
+        log.flush()
     return
 
 #=================================================================
@@ -306,6 +319,7 @@ def sendit(cstr):
 #=================================================================
 
 sendit("{aStby}")
+logit("Standby")
 sendit("{d----}")
 sendit("{c----}")
 cbuff = ""
@@ -365,6 +379,7 @@ try:
                             rteflag = False
                             auto = False
                             sendit("{aStby}")
+                            logit("Standby")
                             sendit("{d----}")
                             sendit("{c---}")
                             speed = 0
@@ -385,8 +400,9 @@ try:
                             startlon = ilonsec
                             destlat = waypts[wpt][0]
                             destlon = waypts[wpt][1]
-                            logit("wpt: "+ str(wpt)+','+str(destlat)+','+str(destlon))
+                            logit("wpt: %d %7.4f, %7.4f" % (wpt, destlat, destlon))
                             azimuth = fromto(startlat, startlon, destlat, destlon)
+                            logit("az set to %d\n" % azimuth)
                             wptdist = distto(startlat, startlon, destlat, destlon)
                             auto = True
                             wptflag = True
@@ -425,7 +441,10 @@ try:
                     print("heading = " + str(hdg))
 
                     print("Motor speed, steer "+str(speed)+", "+str(steer))
-
+#===========================================================================
+                elif xchr == 'T':                   #'D' key + number button Diagnostic
+                    xchr = cbuff[2]
+                    diag_commands(xchr)
 #=========================================================================                    
                 elif xchr == 'X':                   #X exit Select button
                     robot.stop_all()
@@ -457,18 +476,20 @@ try:
                     flonsec = xEst[0, 0] / lonfeet
                     flatsec = xEst[1, 0] / latfeet
                     fhdg= (450 - math.degrees(xEst[2,0]))%360
-                    logit("filtered L/L:" + str(flatsec) + "/" + str(flonsec))
-                    logit("Filtered hdg: " + str(fhdg))
-                    logit("Filtered speed: " + str(xEst[3,0]))
+                    logit("filtered L/L: %7.4f/%7.4f" % (flatsec, flonsec))
+                    logit("Filtered hdg: %6.1f" % fhdg)
+                    logit("Filtered speed: %6.3f" %xEst[3,0])
                     dtg = distto(flatsec, flonsec, destlat, destlon)
                     cstr = "{d%5.1f}" % dtg
                     sendit(cstr)
                     logit(cstr)
-                    az = fromto(flatsec, flonsec, destlat, destlon)
-                    logit("Gps azimuth %5.1f}" % az)
                     
                     if (dtg > (2 * accgps)):
+                        azimuth = fromto(flatsec, flonsec, destlat, destlon)
+                    else:
                         azimuth = fromto(ilatsec, ilonsec, destlat, destlon)
+                    logit("az set to %d\n" % azimuth)
+
                     cstr = "{c%5.1f}" % azimuth
                     sendit(cstr)
                     logit(cstr)
@@ -482,31 +503,35 @@ try:
                     sendit(cstr)
                     logit(cstr)
                 
-                    if (dtg < 3.0):             # a foot from waypoint
+                    if (dtg < accgps):             # closing on waypoint
                         if rteflag:
                             rtseg += 1
                             wpt = routes[route][rtseg]
                             if (wpt == 0):
-                                cstr = "{Stby}"
-                                tty.write(cstr.encode("utf-8"))
+                                sendit("{aStby}")
+                                logit("Standby")
                                 wptflg = False
                                 rteflag = False
                                 speed = 0
+                                auto = False
                             startlat = ilatsec         #dup'ed code
                             startlon = ilonsec
                             destlat = waypts[wpt][0]
                             destlon = waypts[wpt][1]
-                            logit("wpt: %d %5.3f/%5.3f", (wpt, destlat, destlon))
+                            logit("wpt: %d %7.4f/%7.4f" % (wpt, destlat, destlon))
                             azimuth = fromto(startlat, startlon,\
                                 destlat, destlon)
+                            logit("az set to %d\n" % azimuth)
                             wptdist = distto(startlat, startlon, \
                                 destlat, destlon)
                             sendit("{aWp" + str(wpt) + "}")
 
                         else:
                             sendit("{aStby}")
+                            logit("Standby")
                             wptflag =  False
                             speed = 0
+                            auto = False
                         #endif dtg ===================
                     #endif wptflag ===================
                 #endif epoch timer ===================
