@@ -15,6 +15,9 @@ ser = serial.Serial(port='/dev/ttyS0',
 class App:
     
     def __init__(self, master):
+        self.mode = IntVar()
+
+        # telemetry array ===========================================
         data = Frame(master)
         sta=Label(data,text="STS:", font=(None,15))
         sta.grid(row=0,column=0)
@@ -57,98 +60,77 @@ class App:
         self.acc = StringVar()
         Label(data,width=7,font=(None,20),bg="white",fg="blue",borderwidth=1,relief="solid",\
               textvariable=self.acc).grid(row=7,column=1)
-        #self.lon= StringVar()
-        #Label(data, width=8,font=(None,16),bg="white",fg="blue",borderwidth=1,relief="solid",textvariable=self.lon).grid(row=8,column=1)
+        
 
-        
-        keypad=Frame(master)
-        b1=Button(keypad, text="1", command=self.one)
-        b1.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b1.grid(row=0,column=0)
-        b2=Button(keypad, text="2", command=self.two)
-        b2.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b2.grid(row=0,column=1)
-        b3=Button(keypad, text="3", command=self.three)
-        b3.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b3.grid(row=0,column=2)
-        bA=Button(keypad, text="A")
-        bA.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        bA.grid(row=0,column=3)
-        b4=Button(keypad, text="4", command=self.four)
-        b4.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b4.grid(row=1,column=0)
-        b5=Button(keypad, text="5", command=self.five)
-        b5.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b5.grid(row=1,column=1)
-        b6=Button(keypad, text="6", command=self.six)
-        b6.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b6.grid(row=1,column=2)
-        bB=Button(keypad, text="B")
-        bB.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        bB.grid(row=1,column=3)
-        b7=Button(keypad, text="7", command=self.seven)
-        b7.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b7.grid(row=2,column=0)
-        b8=Button(keypad, text="8", command=self.eight)
-        b8.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b8.grid(row=2,column=1)
-        b9=Button(keypad, text="9", command=self.nine)
-        b9.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b9.grid(row=2,column=2)
-        bC=Button(keypad, text="C")
-        bC.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        bC.grid(row=2,column=3)
-        bS=Button(keypad, text="*", command=self.star)
-        bS.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        bS.grid(row=3,column=0)
-        b0=Button(keypad, text="0", command=self.zero)
-        b0.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        b0.grid(row=3,column=1)
-        bp=Button(keypad, text="#", command=self.pound)
-        bp.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        bp.grid(row=3,column=2)
-        bD=Button(keypad, text="D")
-        bD.config(width=2,height=2,font=(None,25),bg="blue",fg="white")
-        bD.grid(row=3,column=3)
-        
+        # STOP button ==================================================
         estop=Frame(master)
         sb = Button(estop, text="STOP", command=self.zero)
         sb.config(width=3,height=2,font=(None,25),bg="red",fg="white",borderwidth=4)
         sb.grid(row=0,column=0)
 
+        # Steering button array ========================================
         steer = Frame(master)
         l35 = Button(steer, text="<<<")
-        l35.config(width=3,height=1,font=(None,15),bg="red3",fg="white",borderwidth=4)
+        l35.config(width=3,height=1,font=(None,15),bg="pink",fg="black",borderwidth=4)
         l35.grid(row=0,column=0)
         
         l5 = Button(steer, text="<<")
-        l5.config(width=3,height=1,font=(None,15),bg="red2",fg="white",borderwidth=4)
+        l5.config(width=3,height=1,font=(None,15),bg="pink",fg="black",borderwidth=4)
         l5.grid(row=0,column=1)
         
         l1 = Button(steer, text="<")
-        l1.config(width=3,height=1,font=(None,15),bg="red",fg="white",borderwidth=4)
+        l1.config(width=3,height=1,font=(None,15),bg="pink",fg="black",borderwidth=4)
         l1.grid(row=0,column=2)
         
         z0 = Button(steer, text=".")
-        z0.config(width=3,height=1,font=(None,25),bg="sky blue",fg="black",borderwidth=4)
+        z0.config(width=3,height=1,font=(None,25),bg="linen",fg="black",borderwidth=4)
         z0.grid(row=0,column=3)
         
         r1 = Button(steer, text=">")
-        r1.config(width=3,height=1,font=(None,15),bg="green2",fg="white",borderwidth=4)
+        r1.config(width=3,height=1,font=(None,15),bg="green2",fg="black",borderwidth=4)
         r1.grid(row=0,column=4)
         
         r5 = Button(steer, text=">>")
-        r5.config(width=3,height=1,font=(None,15),bg="green3",fg="white",borderwidth=4)
+        r5.config(width=3,height=1,font=(None,15),bg="green2",fg="black",borderwidth=4)
         r5.grid(row=0,column=5)
 
         r35 = Button(steer, text=">>>")
-        r35.config(width=3,height=1,font=(None,15),bg="green",fg="white",borderwidth=4)
+        r35.config(width=3,height=1,font=(None,15),bg="green2",fg="black",borderwidth=4)
         r35.grid(row=0,column=6)
 
-        steer.place(x=150,y=520)
+        # speed button array ===================================================
+        speed = Frame(master)
+        fmax = Button(speed, text = "+")
+        fmax.config(width = 2, height = 2, font=(NONE,15), bg="green2",fg="black",borderwidth=4)
+        fmax.grid(row=0,column=0)
+        f0 = Button(speed, text = "0")
+        f0.config(width = 2, height = 2, font=(NONE,15), bg="linen",fg="black",borderwidth=4)
+        f0.grid(row=3,column=0)
+        rmax = Button(speed, text = "-")
+        rmax.config(width = 2, height = 2, font=(NONE,15), bg="pink",fg="black",borderwidth=4)
+        rmax.grid(row=6,column=0)
+        
+
+        # mode menu ===========================================================
+        radio = Frame(master)
+        rb1 = Radiobutton(radio, text="Standby", variable=self.mode, value = 0, \
+            anchor=W, command=lambda:self.mode_set(master, self.mode.get()))
+        rb1.config(width = 6, height = 2, font=(NONE,15))
+        rb1.grid(row=0, column=0)
+        rb2 = Radiobutton(radio, text="Auto", variable=self.mode, value = 1, \
+            anchor=W, command=lambda:self.mode_set(master, self.mode.get()))
+        rb2.config(width = 6, height = 2, font=(NONE,15))
+        rb2.grid(row=1, column=0)
+        rb3 = Radiobutton(radio, text="Path", variable=self.mode, value = 2, \
+            anchor=W, command=lambda:self.mode_set(master, self.mode.get()))
+        rb3.config(width = 6, height = 2, font=(NONE,15))
+        rb3.grid(row=2, column=0)
+        
+        steer.place(x=400,y=520)
+        speed.place(x=950, y=310)
         data.place(x=20,y=20)
-        keypad.place(x=320,y=20)
-        estop.place(x=20, y=500)
+        radio.place(x=320, y=20)
+        estop.place(x=20, y=480)
         
         self.ibuffer = ""
         self.msg = ""
@@ -156,6 +138,93 @@ class App:
         self.lbflag = False
         self.lb2flag = False
         self.piflag = False
+
+    def mode_set(self, mstr, val):
+        if (val == 0):
+            try:
+                lister.destroy()
+            except:
+                print("val = 0, couldnt destroy lister")
+                pass
+            try:
+                auto.destroy()
+            except:
+                pass
+        if (val == 1):
+            try:
+                lister.destroy()
+            except:
+                pass
+            self.auto_turns(mstr)
+        if (val == 2):
+            try:
+                auto.destroy()
+            except:
+                pass
+            self.paths(mstr)
+            
+    
+    def paths(self, mstr):
+        global lister
+        lister = Frame(mstr)
+        lister.place(x=650, y=20)
+        lab = Label(lister, text="Select NAV path")
+        lab.grid(row=0, column=0)
+        lscroll = Scrollbar(lister, orient=VERTICAL)
+        lbox =Listbox(lister, height=4, selectmode=SINGLE,font=(NONE,15),yscrollcommand=lscroll.set)
+        lbox.insert(END, "R3 - E.F. drive")
+        lbox.insert(END, "R4 - hut row")
+        lbox.insert(END, "W13 - canopy")
+        lbox.insert(END, "W14 - driveway center")
+        lbox.insert(END, "W23 - trash cans")
+        lbox.insert(END, "W27 - rose bush")
+        lbox.insert(END, "W29 - E,F, middle")
+        lbox.insert(END, "W30 - office gap")
+        lbox.insert(END, "W23 - rose passage")
+
+        lbox.grid(row=1, column=0)
+        lscroll.config(width=25, command=lbox.yview)
+        lscroll.grid(row=1, column=1, sticky=N+S)
+        ex = Button(lister, text="Execute", command=self.lrevert)
+        ex.grid(row = 2, column = 0)
+        
+    def lrevert(self):
+        lister.destroy()
+        self.mode.set(0)
+        
+    def auto_turns(self, mstr):
+        # auto button array =================================================
+        global auto
+        auto = Frame(mstr)
+        auto.place(x=600, y=20)
+        bs=Button(auto, text="Start")
+        bs.config(width=4,height=2,font=(None,15),bg="white",fg="black")
+        bs.grid(row=0,column=0,columnspan=2)
+        bl90=Button(auto, text="< 90")
+        bl90.config(width=3,height=2,font=(None,15),bg="pink",fg="black")
+        bl90.grid(row=1,column=0)
+        br90=Button(auto, text="90 >")
+        br90.config(width=3,height=2,font=(None,15),bg="green2",fg="black")
+        br90.grid(row=1,column=1)
+        blt=Button(auto, text="T 90")
+        blt.config(width=3,height=2,font=(None,15),bg="pink",fg="black")
+        blt.grid(row=2,column=0)
+        brt=Button(auto, text="90 T")
+        brt.config(width=3,height=2,font=(None,15),bg="green2",fg="black")
+        brt.grid(row=2,column=1)
+        bl180=Button(auto, text="< 180")
+        bl180.config(width=3,height=2,font=(None,15),bg="pink",fg="black")
+        bl180.grid(row=3,column=0)
+        br180=Button(auto, text="180 >")
+        br180.config(width=3,height=2,font=(None,15),bg="green2",fg="black")
+        br180.grid(row=3,column=1)
+        bcan=Button(auto, text="Cancel", command=self.arevert)
+        bcan.config(width=4,height=2,font=(None,15),bg="yellow",fg="black")
+        bcan.grid(row=4,column=0,columnspan=2)
+
+    def arevert(self):
+        auto.destroy()
+        self.mode.set(0)
         
 # keypad button actions
     def star(self):
@@ -172,6 +241,7 @@ class App:
     def zero(self):
         self.key = '0'
         self.xmit()
+        print("STOP")
     def one(self):
         self.key = '1'
         self.xmit()
@@ -269,13 +339,14 @@ class App:
  
         self.ibuffer = "" 
         root.after(25, self.listen)
-  
+ 
         
 root = Tk()
 root.wm_title('Rover Controller')
 app = App(root)
 root.geometry("1024x600+0+0")
 root.after(25, app.listen)
+
 
 root.mainloop()
 
